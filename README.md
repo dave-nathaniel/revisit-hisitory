@@ -1,0 +1,1 @@
+Revisit History is a reflective project by Acces, focused on accessible knowledge-sharing around the theme of coloniality. Through walking tours, bike rides, and other experiential formats, the project engages the past from a reflective perspective — with the aim of making the present more understandable and open to dialogue.
