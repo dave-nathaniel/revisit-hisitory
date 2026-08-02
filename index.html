@@ -1,0 +1,1768 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ACCES — Revisit History</title>
+<meta name="description" content="A reflective project by Acces — accessible knowledge-sharing around the theme of coloniality. Walking tours, bike rides, dialogue in motion. Antwerp." />
+<!-- Official Acces font — Tactic — loaded locally from /fonts -->
+
+<!-- Motion stack: Lenis (smooth scroll, MIT) + GSAP + ScrollTrigger (free) -->
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Revisit History — archival editorial
+   ───────────────────────────────────────────────────────────── */
+
+@font-face{
+  font-family: "Tactic";
+  src: url("fonts/Tactic-Regular.woff") format("woff"),
+       url("fonts/Tactic-Regular.ttf")  format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root{
+  --paper:        #e9e3d4;
+  --paper-warm:   #efe8d6;
+  --ink:          #161311;
+  --ink-soft:     #2a2622;
+
+  --sky:          #9ccbe6;
+  --sky-deep:     #6e8a9a;
+  --sky-pale:     #cfdde4;
+
+  --ochre:        #c98a3a;
+  --rose:         #c98e8a;
+  --stamp:        #b13a2a;
+  --moss:         #6b7a4c;
+
+  /* Official brand color — used for the word "Revisit" everywhere */
+  --brand-orange: #e96a1f;
+  /* Companion white for "History" against dark/colored backgrounds */
+  --brand-white:  #ffffff;
+
+  /* ── "A Colonial Presence" dossier ── the subject reads as a folder: one shared
+     board holds the cover + Formats/Route/Book as filed sheets. This containment
+     (sheets-on-a-board vs. full-bleed About/Contact) is what makes the umbrella felt. */
+  --dossier:      #d7cdb4;              /* the folder board — shared ground for the whole subject run */
+  --dossier-edge: rgba(22,19,17,.32);   /* hairline keyline around each sheet */
+  --leaf:         #f4efe1;              /* a sheet filed on the board */
+  --mat:          clamp(24px, 4.6vw, 84px); /* board margin visible around each sheet */
+
+  --page-x: clamp(20px, 4vw, 56px);
+  --bar-pad: clamp(20px, 2.8vw, 36px);
+  --max:   1760px;
+
+  --t-fast: 280ms cubic-bezier(.22,.61,.36,1);
+  --t-slow: 900ms cubic-bezier(.22,.61,.36,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{
+  background:#ffffff;
+  color:var(--ink);
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+body{
+  min-height:100vh;
+  overflow-x:hidden;
+  background:#ffffff;
+}
+
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+::selection{ background:var(--sky); color:var(--ink) }
+
+/* ─── Brand mark rule ─── */
+/* "Revisit History" must always appear with Revisit in orange + History in
+   white (on dark backings) or near-black (where white would vanish on paper). */
+.rh-mark{ font-family: "Tactic", "Helvetica Neue", sans-serif; font-weight: 400; letter-spacing: -.02em; text-transform: none; }
+.rh-r{ color: var(--brand-orange); }
+.rh-h{ color: var(--brand-white); }
+/* On light/paper backgrounds (default), white History would be invisible —
+   downgrade to ink so the two-tone reads. */
+.rh-mark.on-light .rh-h,
+.bar .rh-h,
+.intro .rh-h,
+.contact .rh-h{
+  color: var(--ink);
+}
+
+/* ─── Lenis ─── */
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}
+.lenis.lenis-stopped{overflow:hidden}
+
+/* ─── Type system ─── */
+.display{
+  font-family:"Tactic", "Helvetica Neue", sans-serif;
+  font-variation-settings:"opsz" 144,"SOFT" 30,"WONK" 0;
+  font-weight:430;
+  letter-spacing:-0.025em;
+  line-height:.92;
+  font-style:normal;
+}
+.small-caps{
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.22em;
+  font-size:11px;
+  font-weight:500;
+}
+.eyebrow{
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.32em;
+  font-size:10.5px;
+  font-weight:500;
+  color:var(--ink-soft);
+}
+
+/* ─── BAR: parent-style stacked wordmark + list ─── */
+.bar{
+  position:fixed; inset:0 0 auto 0; z-index:60;
+  display:grid; grid-template-columns: 1fr 1fr;
+  padding: var(--bar-pad) var(--page-x);
+  pointer-events:none;
+  mix-blend-mode: normal;
+  /* Bar starts invisible — the curtain is the hero. Fades in once curtain opens. */
+  opacity: 0;
+  transition: background var(--t-fast), backdrop-filter var(--t-fast), padding var(--t-fast), opacity 400ms cubic-bezier(.22,.61,.36,1);
+}
+.bar > *{ pointer-events:auto }
+/* Brand wordmark sits at compact size always now (curtain is the hero motion). */
+.brand{
+  transform-origin: top left;
+}
+.bar.compact{
+  padding: 14px var(--page-x);
+  /*background: color-mix(in srgb, var(--paper) 80%, transparent);*/
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border-bottom: 1px solid rgba(22,19,17,.08);
+  align-items: center;
+  opacity: 1;
+}
+/* Brand stays at its CSS-baseline (compact) size — GSAP morph drives the scale. */
+.bar.compact .brand .b{ margin-top: 0 }
+.bar.compact .nav-list{
+  flex-direction: row;
+  gap: 28px;
+  font-size: 14px;
+  letter-spacing: .04em;
+  font-weight: 500;
+  justify-self: end;
+  align-items: center;
+}
+.bar.compact .nav-list a{ font-size: 30px }
+.bar.compact .nav-list a::after{ height: 1px; bottom: -3px }
+
+.brand{
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  /* Compact baseline: matches nav-item size so logo + menu read as one row.
+     GSAP scales it up on hero. */
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing:-.02em;
+  text-transform: none;
+  display:flex; flex-direction:column;
+  gap: 0;
+  align-self:center;
+  width: max-content;
+  transition: opacity var(--t-fast);
+}
+.brand .b{ font-size: .56em; line-height: 1; margin-top: 3px; }
+.brand .a{ display:block }
+.brand .b{
+  display:block;
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:300;
+  font-variation-settings:"opsz" 144,"WONK" 1;
+  font-size: .58em;
+  color: var(--sky-deep);
+  letter-spacing:-.015em;
+  margin-top: -4px;
+}
+
+.nav-list{
+  list-style:none; margin:0; padding:0;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  /* Horizontal always. The bar only ever appears in its .compact form; keeping the
+     base layout horizontal too means toggling .compact only fades opacity — it never
+     snaps the menu to a vertical stack that would flash during the fade-out. */
+  font-size: 14px;
+  line-height: 1.03;
+  letter-spacing: .04em;
+  text-align:left;
+  justify-self:end;
+  align-self:center;
+  display:flex; flex-direction:row; gap: 28px; align-items:center;
+}
+.nav-list li{ display:block; }
+.nav-list a{
+  display:inline-block;
+  position:relative;
+  padding: 0;
+  transition: color var(--t-fast), transform var(--t-fast);
+}
+.nav-list a::after{
+  content:""; position:absolute; left:0; right:100%; bottom: .08em;
+  height: 2px; background: var(--ink);
+  transition: right 360ms cubic-bezier(.22,.61,.36,1);
+}
+.nav-list a:hover{ color: var(--sky-deep) }
+.nav-list a:hover::after{ right: 0; background: var(--sky-deep); }
+.nav-list a .arrow{
+  display:inline-block; margin-left: .2em;
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:300;
+  font-variation-settings:"opsz" 144,"WONK" 1;
+  transform: translateY(-.05em);
+  transition: transform var(--t-fast);
+}
+.nav-list a:hover .arrow{ transform: translate(.06em, -.12em) }
+
+/* fixed corner language toggle (parent mimic) */
+.lang{
+  position:fixed; bottom: 16px; left:var(--page-x); z-index:50;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+  display:flex; gap:6px;
+}
+.lang button{ opacity:.55; padding:2px 0; }
+/*.lang button[aria-pressed="true"]{ opacity:1; border-bottom:1px solid var(--ink) }*/
+.foot-mini{
+  position:fixed; bottom: 16px; left: 0; right: 0; z-index: 49;
+  display:flex; justify-content:center; gap: 22px;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:13px; letter-spacing:.04em;
+  pointer-events:none;
+}
+.foot-mini a{ pointer-events:auto; opacity:.7 }
+.foot-mini a:hover{ opacity:1; border-bottom:1px solid var(--ink) }
+
+/* mobile menu trigger */
+.menu-btn{
+  display:none; align-self:start;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  font-size: 14px; letter-spacing:.18em; text-transform:uppercase;
+  padding: 8px 12px; border:1px solid var(--ink);
+}
+.menu-overlay{
+  position:fixed; inset:0; background:var(--paper); z-index:60;
+  display:none; flex-direction:column; padding: 22px var(--page-x);
+}
+.menu-overlay.open{ display:flex }
+.menu-overlay .close{
+  align-self:flex-end;
+  font-size:14px; letter-spacing:.18em; text-transform:uppercase;
+  padding:8px 12px; border:1px solid var(--ink);
+}
+.menu-overlay ul{
+  list-style:none; margin:auto 0; padding:0;
+  display:flex; flex-direction:column; gap: 8px;
+}
+.menu-overlay a{
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  font-size: clamp(40px, 11vw, 80px);
+  letter-spacing:-.02em; line-height:1;
+}
+
+/* ─── HERO ─── */
+.hero{
+  min-height: 100svh;
+  position: relative;
+  padding: 0 var(--page-x);
+  overflow: hidden;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  padding-bottom: 96px;
+}
+.hero-bg{
+  position:absolute;
+  top: 0; left: 0; right: 0; height: 100vh;
+  z-index:-1;
+  /*background-image:url("3067e280-8af9-4025-b8d5-8890bff622b6.jpg");*/
+  background-size:cover;
+  background-position:center 35%;
+  filter: saturate(.72) contrast(.96) brightness(1.03);
+  will-change: transform, opacity;
+}
+.hero-bg::after{
+  content:""; position:absolute; inset:0;
+  background:
+    linear-gradient( to bottom, rgba(233,227,212,.55) 0%, rgba(233,227,212,.15) 28%, rgba(233,227,212,.05) 55%, rgba(233,227,212,.92) 100%),
+    linear-gradient( to right,  rgba(233,227,212,.35) 0%, rgba(233,227,212,0)   30%, rgba(233,227,212,0) 70%, rgba(233,227,212,.45) 100%);
+}
+/* postmark */
+.postmark{
+  width: 168px; aspect-ratio:1; border-radius:50%;
+  border: 1.2px solid var(--stamp);
+  display:grid; place-items:center;
+  color:var(--stamp);
+  transform: rotate(-7deg);
+  opacity:.85;
+}
+.postmark::before, .postmark::after{
+  content:""; position:absolute; left:50%; right:auto; height:1.2px; background:var(--stamp);
+  width:78%; transform-origin:center;
+}
+.postmark::before{ top:38%; transform: translateX(-50%) }
+.postmark::after { top:62%; transform: translateX(-50%) }
+.postmark .stamp-inner{
+  width:78%; aspect-ratio:1; border:1.2px solid var(--stamp);
+  border-radius:50%; display:grid; place-items:center; text-align:center;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:9px; letter-spacing:.28em; text-transform:uppercase; line-height:1.35;
+  padding:14px;
+}
+.postmark .stamp-inner b{
+  display:block; font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:400;
+  font-variation-settings:"opsz" 144,"WONK" 1;
+  font-size: 28px; letter-spacing:-.02em; margin:2px 0;
+  text-transform:none;
+}
+
+/* visually-hidden — screen-reader-only */
+.visually-hidden{
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ─── Curtain reveal ─── */
+.hero-curtain{
+  position: absolute;
+  /* Pin the curtain to the visible viewport so it doesn't stretch over the
+     section's extra (200vh) scroll-spacer height. */
+  top: 0; left: 0; right: 0;
+  height: 100vh;
+  z-index: 5;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  pointer-events: none;
+  overflow: hidden;
+}
+.curtain-word{
+  display: flex; align-items: center; justify-content: center;
+  font-family: "Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  /* The Tactic file we have is Regular — we fake the bold look via the
+     letter sizing + tight tracking. */
+  font-size: clamp(96px, 22vw, 360px);
+  line-height: .82;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  will-change: transform;
+  user-select: none;
+}
+.curtain-revisit{
+  color: var(--brand-orange);
+  align-items: flex-end;     /* sits against the horizontal split */
+  padding-bottom: clamp(4px, 0.6vw, 14px);
+}
+.curtain-history{
+  color: var(--brand-white);
+  /* Subtle ink stroke so the white word stays legible over light paper */
+  /*-webkit-text-stroke: 1px rgba(22,19,17,.55);
+  text-shadow: 0 2px 14px rgba(22,19,17,.18);*/
+  align-items: flex-start;
+  padding-top: clamp(4px, 0.6vw, 14px);
+}
+/* On wide screens, slightly bigger; on narrow, slightly smaller */
+@media (min-width: 1600px){ .curtain-word{ font-size: 360px } }
+.hero-eyebrow{
+  position: absolute;
+  /* Anchor to the bottom of the visible viewport (the section is 200vh
+     tall so plain "bottom: 32px" would land off-screen). */
+  top: calc(100vh - 52px); left: var(--page-x);
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:12px;
+  letter-spacing:.22em; text-transform:uppercase; font-weight:500;
+}
+.hero-scroll{
+  position: absolute;
+  top: calc(100vh - 52px); right: var(--page-x);
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:11px;
+  letter-spacing:.22em; text-transform:uppercase; font-weight:500;
+  display:flex; align-items:center; gap:14px;
+  opacity:.7;
+  transition: opacity var(--t-fast);
+}
+.hero-scroll:hover{ opacity:1 }
+.hero-scroll .line{
+  display:inline-block; width: 56px; height:1px; background: var(--ink);
+  position: relative;
+}
+.hero-scroll .line::before{
+  content:""; position:absolute; right:-1px; top:-3px;
+  width:8px; height:8px;
+  border-right:1px solid var(--ink); border-bottom:1px solid var(--ink);
+  transform: rotate(-45deg);
+}
+
+/* ─── INTRO / INDEX section ─── */
+.intro{
+  padding: 0 var(--page-x);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.intro-grid{
+  display:grid;
+  grid-template-columns: 200px 1fr 220px;
+  gap: 64px;
+  align-items:start;
+  /*border-top:1px solid var(--ink);*/
+  padding-top: 56px;
+  width: 100%;
+  max-width: var(--max);
+}
+.intro .postmark{
+  position: static;
+  transform: rotate(-7deg);
+  margin-top: 8px;
+}
+.intro-main{ min-width: 0; }
+.intro-main .crumb{ margin-bottom: 20px; }
+.intro-body{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+  font-variation-settings:"opsz" 60,"SOFT" 40;
+  font-size: clamp(20px, 2.1vw, 30px);
+  line-height: 1.32;
+  letter-spacing:-.008em;
+  max-width: 44ch;
+  margin: 0;
+}
+.intro-coords{
+  display:grid; gap:8px;
+  font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  text-align:right;
+  font-weight: 500;
+}
+.intro-coords b{ font-weight:500 }
+.intro-coords span{ opacity:.7; font-weight: 400 }
+@media (max-width: 1100px){
+  .intro-grid{ grid-template-columns: 1fr; gap: 32px }
+  .intro-coords{ text-align:left }
+}
+
+/* ─── APPROACH ─── */
+.approach{
+  padding: 0 var(--page-x);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.approach-rail{
+  display:grid; grid-template-columns: minmax(180px, 220px) 1fr;
+  gap: 48px;
+  align-items:start;
+  /*border-top:1px solid var(--ink);*/
+  padding-top: 36px;
+}
+.approach-rail .label{ display:grid; gap:6px }
+.approach-rail .label b{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:400; font-size:18px;
+  font-variation-settings:"opsz" 14,"WONK" 1;
+}
+.approach-body{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+  font-variation-settings:"opsz" 60,"SOFT" 50;
+  font-size: clamp(24px, 3.6vw, 54px);
+  line-height: 1.12;
+  letter-spacing:-.018em;
+  max-width: 22ch;
+}
+.approach-body em{
+  font-style:italic; color:var(--sky-deep);
+  font-variation-settings:"opsz" 60,"SOFT" 60,"WONK" 1;
+  font-weight:300;
+}
+.approach-footnote{
+  font-size: 13.5px; line-height:1.55;
+  max-width: 38ch; margin: 40px 0 0 auto;
+  /*border-top:1px solid var(--ink);*/
+  padding-top: 14px;
+}
+
+/* ─── SUB-UMBRELLA COVER (A Colonial Presence — the subject under Revisit History) ─── */
+.subjects{
+  padding: 0 var(--mat);   /* horizontal board only; vertical board comes from centring */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.subjects-inner{
+  width: 100%;
+  max-width: var(--max);
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 360px);
+  gap: clamp(40px, 6vw, 96px);
+  align-items: center;
+}
+.subject-title{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+  font-variation-settings:"opsz" 144,"SOFT" 40;
+  font-size: clamp(44px, 7vw, 96px);
+  line-height: .94; letter-spacing: -.025em;
+  margin: 12px 0 22px; text-wrap: balance;
+}
+.subject-title em{
+  font-style: italic; color: var(--sky-deep); font-weight: 300;
+  font-variation-settings:"opsz" 144,"WONK" 1;
+}
+.subject-lede{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 340;
+  font-variation-settings:"opsz" 24;
+  font-size: clamp(17px, 1.5vw, 21px);
+  line-height: 1.5; letter-spacing: -.005em;
+  max-width: 46ch; margin: 0;
+}
+.subject-lede em{ font-style: italic; color: var(--sky-deep); font-weight: 300; }
+/* Programme method note, folded into the sub-umbrella cover */
+.subject-method{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 340;
+  font-variation-settings:"opsz" 24;
+  font-size: clamp(14px, 1.1vw, 16px);
+  line-height: 1.6; letter-spacing: -.003em;
+  max-width: 52ch; margin: 22px 0 0; color: var(--ink-soft);
+}
+.subject-method em{ font-style: italic; color: var(--sky-deep); font-weight: 300; }
+.subject-guides{
+  margin: 20px 0 0; padding-top: 14px;
+  border-top: 1px solid rgba(22,19,17,.18);
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 340;
+  font-size: 13px; line-height: 1.5; color: var(--ink-soft); max-width: 36ch;
+}
+.subject-index{ align-self: center; }
+.index-cap{ margin-bottom: 12px; }
+.index-list{
+  list-style: none; margin: 0; padding: 0;
+  border-top: 1px solid var(--ink);
+}
+.index-list li{
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 16px; align-items: baseline;
+  padding: 16px 0; border-bottom: 1px solid var(--ink);
+}
+.index-list .idx-n{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 300;
+  font-variation-settings:"opsz" 14,"WONK" 1;
+  font-size: 16px; color: var(--stamp); font-variant-numeric: tabular-nums;
+}
+.index-list .idx-name{
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 500;
+  font-size: 19px; letter-spacing: -.01em;
+}
+.index-list .idx-state{
+  font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+  white-space: nowrap; color: var(--stamp);
+}
+.index-note{
+  margin: 16px 0 0; font-size: 13px; line-height: 1.55;
+  color: var(--ink-soft); max-width: 34ch;
+}
+@media (max-width: 1100px){
+  .subjects-inner{ grid-template-columns: 1fr; gap: 32px; }
+  .subject-index{ align-self: start; }
+}
+
+/* ─── SUBJECT CONTAINMENT (the dossier) ─────────────────────────────────────
+   The whole "A Colonial Presence" run — cover + Formats + Route + Book — sits on
+   one board (--dossier). Each panel's content becomes a filed sheet (.filed),
+   inset on the board with a hairline keyline. About + Contact stay full-bleed
+   white (outside the folder). Sheets-on-a-board vs. full-bleed is the felt cue
+   that Formats/Route/Book live *inside* the subject, not beside it. */
+.filed{
+  position: relative; z-index: 1;
+  width: 100%; max-width: var(--max);
+  margin-inline: auto;
+  background: var(--leaf);
+  border: 1px solid var(--dossier-edge);
+  box-shadow: 0 2px 7px rgba(22,19,17,.10);   /* soft paper lift; blur < 16px, not a ghost-card */
+  /* Vertical padding doubles as a sacrificial board buffer: because the subject
+     sections carry NO vertical mat, the sheet is centred and its own padding is
+     what clips first on short screens — so content stays visible down to the same
+     viewport height as the original (un-matted) design. Board shows above/below
+     the sheet only when the viewport is taller than the content. */
+  padding: clamp(26px, 2.8vw, 44px);
+}
+
+/* ─── FORMATS ─── */
+.formats{
+  color: var(--ink);
+  padding: 0 var(--mat);   /* horizontal board only; vertical board comes from centring */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.formats::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background-image:url("3067e280-8af9-4025-b8d5-8890bff622b6.jpg");
+  background-size: 140%;
+  background-position: center;
+  opacity:.14;
+  mix-blend-mode: multiply;
+  filter: saturate(.4) contrast(1.05);
+}
+.formats > *{ position:relative; z-index:1 }
+.formats-head{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  align-items:end;
+  gap: 32px;
+  padding-bottom: 28px;
+  margin-bottom: 56px;
+}
+.formats-head h2{
+  margin:0;
+  font-family:"Tactic", "Helvetica Neue", sans-serif;
+  font-size: clamp(40px, 6vw, 96px);
+  font-weight:330;
+  font-variation-settings:"opsz" 144,"SOFT" 40;
+  letter-spacing:-.02em;
+  line-height:1;
+}
+.formats-head h2 em{
+  font-style:italic; font-weight:300; color:var(--ink);
+  font-variation-settings:"opsz" 144,"WONK" 1;
+}
+.formats-head .count{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic;
+  font-variation-settings:"opsz" 144,"WONK" 1;
+  font-size: 64px; line-height:1; font-weight:300;
+}
+.cards{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 56px;
+}
+.card{
+  position:relative;
+  padding: 48px 40px 40px;
+  display:flex; flex-direction:column; gap: 20px;
+  transition: background var(--t-fast);
+}
+.card .ord{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:300;
+  font-variation-settings:"opsz" 144,"WONK" 1;
+  font-size: 108px; line-height:1;
+  color:var(--ink); opacity:.95;
+  margin-bottom: 8px;
+}
+.card .ord sup{
+  font-size:14px; vertical-align:top;
+  letter-spacing:.2em; font-style:normal;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  margin-left:8px; opacity:.6;
+}
+.card h3{
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  font-size: 20px; margin:0;
+  text-transform:uppercase; letter-spacing:.04em;
+  line-height:1.2; text-wrap:balance;
+}
+.card h3 em{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:400;
+  text-transform:none; letter-spacing:-.01em;
+  font-variation-settings:"opsz" 14,"WONK" 1;
+}
+.card-meta{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 4px }
+.chip{
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 6px 10px; border:1px solid var(--ink);
+  font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  /*background: var(--paper-warm);*/
+}
+.chip .dot{ width:5px; height:5px; background:var(--ink); border-radius:50% }
+.card p{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+  font-variation-settings:"opsz" 24;
+  font-size: 17px; line-height:1.45; letter-spacing:-.003em;
+  max-width: 44ch; margin: 12px 0 auto;
+}
+.card-cta{
+  display:inline-flex; align-items:center; gap:14px;
+  border-top:1px solid var(--ink); padding-top:18px; margin-top:24px;
+  font-size:12px; letter-spacing:.22em; text-transform:uppercase; font-weight:500;
+  width:fit-content;
+}
+.card-cta .arrow{
+  width:34px; height:1px; background:var(--ink); position:relative; transition: width var(--t-fast);
+}
+.card-cta .arrow::after{
+  content:""; position:absolute; right:-1px; top:-3px;
+  width:8px; height:8px; border-right:1px solid var(--ink); border-top:1px solid var(--ink);
+  transform: rotate(45deg);
+}
+.card-cta:hover .arrow{ width:54px }
+
+/* ─── ROUTE map panel ─── */
+.route{
+  padding: 0 var(--mat);     /* the board margin around the sheet */
+  position: relative;
+  overflow: hidden;
+  /* Inner wrapper (.route-inner is also the filed sheet) holds the content to one
+     viewport; the rest of the panel's height is scroll room for the map draw-on
+     before Book begins to pin over the top. */
+}
+.route-inner{
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: 48px;
+  align-items: center;
+  justify-content: center;
+  /* Inset within the sticky viewport so the board shows above/below the sheet. */
+  height: auto;
+  min-height: calc(100vh - clamp(72px, 11vh, 128px));
+  margin-block: clamp(36px, 5.5vh, 64px);
+}
+.route::before{
+  /* paper grain over the route panel */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(rgba(22,19,17,.06) 1px, transparent 1.2px),
+    radial-gradient(rgba(22,19,17,.04) 1px, transparent 1.2px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1px 2px;
+  mix-blend-mode: multiply;
+  opacity: .8;
+}
+.route-text{
+  position: relative; z-index: 2;
+  max-width: 36ch;
+}
+.route-text .eyebrow{ margin-bottom: 14px }
+.route-text h2{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+  font-variation-settings:"opsz" 144,"SOFT" 40;
+  font-size: clamp(36px, 4.4vw, 72px);
+  line-height: .96; letter-spacing:-.02em;
+  margin: 0 0 18px;
+}
+.route-text h2 em{
+  font-style: italic; color: var(--sky-deep);
+  font-variation-settings:"opsz" 144,"WONK" 1; font-weight: 300;
+}
+.route-text p{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 340;
+  font-variation-settings:"opsz" 24;
+  font-size: 16px; line-height: 1.5;
+  margin: 0 0 22px; letter-spacing:-.003em;
+}
+.route-text .legend{
+  list-style: none; margin: 0; padding: 0;
+  border-top: 1px solid var(--ink);
+  font-size: 12px; letter-spacing: .04em;
+}
+.route-text .legend li{
+  display: grid; grid-template-columns: 32px 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ink);
+}
+.route-text .legend .num{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 300;
+  font-variation-settings:"opsz" 14,"WONK" 1;
+  font-size: 18px; color: var(--stamp);
+  text-align: center;
+}
+.route-text .legend .km{ opacity: .6; font-variant-numeric: tabular-nums }
+
+.route-map{
+  position: relative; z-index: 1;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 56vh;
+  height: 56vh;
+  justify-self: stretch;
+  border: 1px solid var(--ink);
+  background:
+    /* faux topographic contour rings */
+    radial-gradient(circle at 30% 35%, rgba(22,19,17,.05) 0 1px, transparent 1px) 0 0/24px 24px,
+    radial-gradient(circle at 70% 65%, rgba(22,19,17,.04) 0 1px, transparent 1px) 0 0/36px 36px,
+    /* very faded blue river hint */
+    linear-gradient( 110deg, transparent 0 38%, rgba(110,138,154,.18) 38% 42%, transparent 42% 100%),
+    /* aged paper gradient */
+    linear-gradient(160deg, #efe5c6 0%, #e1d3a8 60%, #d6c69a 100%);
+  box-shadow: inset 0 0 0 6px rgba(22,19,17,.02), 2px 2px 0 rgba(22,19,17,.4);
+  overflow: hidden;
+}
+/* compass + scale frills */
+.route-map .compass{
+  position: absolute; top: 16px; right: 16px;
+  width: 56px; height: 56px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: .2em; font-weight: 500;
+  background: rgba(239,229,198,.65);
+}
+.route-map .compass::before{
+  content: ""; position: absolute; left: 50%; top: 6px; bottom: 6px; width: 1px;
+  background: linear-gradient(to bottom, var(--stamp) 0 50%, var(--ink) 50% 100%);
+  transform: translateX(-50%);
+}
+.route-map .scale{
+  position: absolute; bottom: 14px; left: 16px;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+}
+.route-map .scale .bar-s{
+  display: inline-block; height: 4px; width: 80px;
+  background: repeating-linear-gradient(to right, var(--ink) 0 20px, transparent 20px 40px);
+  border: 1px solid var(--ink);
+}
+.route-map svg{
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: block;
+}
+.route-map .pin{
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: grid; place-items: center;
+  filter: drop-shadow(1px 2px 0 rgba(22,19,17,.18));
+}
+.route-map .pin .dot{
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--stamp);
+  display: grid; place-items: center;
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 400;
+  font-variation-settings:"opsz" 14,"WONK" 1;
+  font-size: 11px; color: var(--stamp); line-height: 1;
+}
+.route-map .pin .tag{
+  margin-top: 6px;
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+@media (max-width: 1100px){
+  .route-inner{ grid-template-columns: 1fr; gap: 24px; }
+  .route{ padding-top: 80px; }
+  .route-map{ aspect-ratio: 4/3; max-height: 50vh }
+}
+
+/* ─── BOOK ─── */
+.book{
+  padding: 0 var(--mat);   /* horizontal board only; vertical board comes from centring */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.book .filed{
+  display:grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 64px;
+  align-items:center;
+}
+.book-head h2{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:330;
+  font-variation-settings:"opsz" 144,"SOFT" 40;
+  font-size: clamp(40px, 5vw, 84px);
+  line-height:.96; letter-spacing:-.02em;
+  margin: 12px 0 32px;
+}
+.book-head h2 em{
+  font-style:italic; color:var(--sky-deep);
+  font-variation-settings:"opsz" 144,"WONK" 1; font-weight:300;
+}
+.notes{
+  list-style:none; padding:0; margin:0;
+  display:grid; gap:0;
+  border-top:1px solid var(--ink);
+}
+.notes li{
+  display:grid; grid-template-columns: 28px 1fr;
+  align-items:start; gap:14px;
+  padding: 14px 0;
+  border-bottom:1px solid var(--ink);
+  font-size:14px; line-height:1.45;
+}
+.notes li .n{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:300;
+  font-variation-settings:"opsz" 14,"WONK" 1;
+  font-size: 18px; color:var(--stamp); line-height:1.2;
+}
+
+.book-embed{ display:grid; gap:16px }
+.embed-frame{
+  position:relative;
+  border:1px solid var(--ink);
+  background: var(--paper-warm);
+  aspect-ratio: 4 / 5;
+  overflow:hidden;
+}
+.embed-frame iframe{
+  position:absolute; inset:0; width:100%; height:100%; border:0;
+  background: var(--paper-warm);
+}
+.embed-frame::before{
+  content:""; position:absolute; inset:auto -1px -1px -1px; height:8px;
+  background-image: radial-gradient(circle at 6px 6px, var(--paper) 4px, transparent 4.5px);
+  background-size: 12px 12px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  pointer-events:none;
+}
+.embed-cap{
+  display:flex; justify-content:space-between; gap:24px;
+  font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  border-top:1px solid var(--ink);
+  padding-top: 12px;
+}
+.embed-cap a{ border-bottom:1px solid var(--ink); padding-bottom:1px }
+
+/* ─── CONTACT ─── */
+.contact{
+  padding: 0 var(--page-x);
+  /*border-top: 1px solid var(--ink);*/
+  display:grid;
+  grid-template-columns: 1fr auto;
+  align-items:center;
+  gap: 48px;
+}
+.contact h2{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:330;
+  font-variation-settings:"opsz" 144,"SOFT" 30;
+  font-size: clamp(48px, 8vw, 128px);
+  /*line-height:.92; */
+  letter-spacing:-.025em;
+  margin:0; max-width: 14ch;
+}
+.contact h2 a{
+  font-style:italic; font-weight:300;
+  font-variation-settings:"opsz" 144,"WONK" 1;
+  color:var(--sky-deep);
+  transition: color var(--t-fast);
+}
+.contact h2 a .mail{
+  display:inline-block;
+  /*border-bottom: 2px solid var(--sky-deep);*/
+  padding-bottom: .03em;
+}
+.contact h2 a:hover{ color:var(--stamp) }
+.contact h2 a:hover .mail{ border-color: var(--stamp) }
+.contact-meta{
+  display:grid; gap:8px; text-align:right;
+  font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:500;
+}
+.contact-meta span{ opacity:.65 }
+
+/* ─── FOOTER ─── */
+footer{
+  padding: 26px var(--page-x);
+  border-top: 1px solid var(--ink);
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items:center;
+  gap: 24px;
+  font-size: 12px;
+  letter-spacing:.04em;
+}
+footer .left, footer .right{ display:flex; gap:18px; flex-wrap:wrap }
+footer .right{ justify-content:flex-end }
+footer .center{
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic;
+  font-variation-settings:"opsz" 14,"WONK" 1; letter-spacing:.02em;
+}
+footer a{ position:relative }
+footer a:hover{ border-bottom:1px solid var(--ink) }
+
+/* cookie banner */
+.cookies{
+  position:fixed; right: var(--page-x); bottom: 20px; z-index:70;
+  max-width: min(440px, calc(100vw - 2*var(--page-x)));
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  padding: 24px 26px 22px;
+  display:flex; flex-direction:column; align-items:flex-start; gap: 18px;
+  box-shadow: 6px 6px 0 var(--ink);       /* hard archival offset — the site's print-stamp shadow */
+  transition: transform var(--t-fast), opacity var(--t-fast);
+}
+.cookies.hidden{ transform: translateY(12px); opacity:0; pointer-events:none }
+/* BIG + BOLD — the message is set as display type, faked-bold via size + tight tracking */
+.cookies .ck-msg{
+  margin:0;
+  font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:500;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: .96; letter-spacing: -.03em;
+  max-width: 11ch; text-wrap: balance;
+}
+.cookies button{
+  font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+  border: 1px solid var(--ink); padding: 11px 22px;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.cookies button:hover{ background: var(--ink); color: var(--paper); }
+
+/* ─── GSAP word reveal ─── */
+.word{
+  display:inline-block;
+  overflow:hidden;
+  vertical-align: top;
+  line-height: inherit;
+}
+.word .w-inner{
+  display:inline-block;
+  transform: translateY(110%);
+  opacity:.001;
+  will-change: transform, opacity;
+}
+.gsap-fade{
+  opacity:0;
+  transform: translateY(18px);
+  will-change: transform, opacity;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1100px){
+  .hero-foot{ grid-template-columns: 1fr }
+  .hero-coords{ text-align:left }
+  .book .filed{ grid-template-columns: 1fr; gap: 40px }
+  .approach-rail{ grid-template-columns: 1fr; gap: 18px }
+  .approach-footnote{ margin-left: 0 }
+}
+@media (max-width: 820px){
+  :root{ --page-x: 18px; --bar-pad: 16px }
+  .nav-list{ display:none }
+  .menu-btn{ display:inline-flex; justify-self:end }
+  .bar{ grid-template-columns: 1fr auto }
+  .brand{ font-size: 40px }
+  .postmark{ width: 116px; top: 92px }
+  .postmark .stamp-inner b{ font-size: 22px }
+  .formats-head{ grid-template-columns: 1fr; align-items:start }
+  .formats-head .count{ font-size: 44px }
+  .cards{ grid-template-columns: 1fr }
+  .card{ padding: 36px 22px }
+  .contact{ grid-template-columns: 1fr; align-items:start }
+  .contact-meta{ text-align:left }
+  footer{ grid-template-columns: 1fr; text-align:center }
+  footer .right{ justify-content:center }
+  .lang{ bottom: 12px }
+  .foot-mini{ display:none }
+  .cookies{ left:12px; right:12px; bottom:12px; box-shadow: 3px 3px 0 var(--ink); }
+  .progress{ display:none }
+  .hero{ padding: 160px var(--page-x) 80px }
+  .intro, .subjects, .formats, .book, .contact{ padding-top: 140px; padding-bottom: 80px }
+  /* Unpin the text-dense panels on mobile so tall stacked content scrolls instead of
+     clipping under the 100vh/overflow-hidden pin. Hero + route stay pinned so their
+     scrubbed curtain / map-draw animations keep working. */
+  .panels > section.intro,
+  .panels > section.subjects,
+  .panels > section.formats,
+  .panels > section.book,
+  .panels > section.contact{
+    position: relative; height: auto; min-height: 100svh; overflow: visible;
+  }
+}
+
+/* ─── Pinned-panels reveal (sticky stack) ─── */
+.panels{
+  position: relative;
+}
+.panels > section,
+.panels > section.hero,
+.panels > section.intro,
+.panels > section.subjects,
+.panels > section.formats,
+.panels > section.route,
+.panels > section.book,
+.panels > section.contact{
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: 100vh;
+  width: 100%;
+  background: #ffffff;
+  will-change: transform;
+  overflow: hidden;
+}
+/* Hero panel is taller so the curtain reveal can fully play out WITHOUT
+   any other panel sliding up underneath it. First 100vh of scroll runs the
+   curtain; the rest is dwell room before Intro begins pinning. */
+/* Height tuned so the NEXT panel begins sliding up exactly as the curtain clears
+   (curtain finishes at ~0.85vh of scroll; the panel enters the viewport at
+   height − 100vh). 175vh ⇒ enter at ~0.75vh = no blank-paper gap after the reveal. */
+.panels > section.hero{
+  height: 175vh;
+  min-height: 175vh;
+}
+/* Route panel needs scroll room for its draw-on animation BEFORE the next
+   panel starts sliding up. */
+.panels > section.route{
+  height: 220vh;
+  min-height: 220vh;
+}
+/* Stack order: each later section sits on top, sliding up over the previous */
+.panels > section.hero    { z-index: 1; }
+.panels > section.intro   { z-index: 2; }
+.panels > section.subjects{ z-index: 3; }
+.panels > section.formats { z-index: 4; }
+.panels > section.route   { z-index: 5; }
+.panels > section.book    { z-index: 6; }
+.panels > section.contact { z-index: 7; }
+
+/* Each section gets a top-edge shadow so the slide-up reveal reads as a real edge */
+.panels > section:not(.hero)::before{
+  content:"";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 24px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(22,19,17,.12), rgba(22,19,17,0));
+  opacity: 0;
+  transition: opacity 280ms cubic-bezier(.22,.61,.36,1);
+}
+.panels > section.is-incoming::before{ opacity: 1 }
+
+/* Section-specific backgrounds. The "A Colonial Presence" dossier run — the cover
+   (subjects) + Formats + Route + Book — all share one folder board (--dossier), so
+   their filed sheets read as leaves in the same folder. Hero keeps warm paper;
+   About + Contact stay white (#fff, from the base rule) — outside the folder. */
+.panels > section.hero    { background: var(--paper);   }
+.panels > section.subjects{ background: var(--dossier); }
+.panels > section.formats { background: var(--dossier); }
+.panels > section.route   { background: var(--dossier); }
+.panels > section.book    { background: var(--dossier); }
+
+/* Active nav-link state */
+.nav-list a.is-active{ color: var(--sky-deep) }
+.nav-list a.is-active::after{ right: 0; background: var(--sky-deep) }
+.bar.compact .nav-list a.is-active{ color: var(--sky-deep) }
+.bar.compact .nav-list a.is-active::after{ right: 0; background: var(--sky-deep) }
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .word .w-inner, .gsap-fade{ transform:none!important; opacity:1!important }
+  .panels > section{ position: static }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR — parent style: huge wordmark left, huge stacked list right -->
+<header class="bar">
+  <a href="#top" class="brand" aria-label="Revisit History — a programme by Acces">
+    <span class="rh-mark"><span class="rh-r">Revisit</span>&nbsp;<span class="rh-h">History</span></span>
+  </a>
+  <ul class="nav-list" aria-label="Primary">
+    <li><a href="#about" data-link>About</a></li>
+    <li><a href="#book" data-link>Book</a></li>
+    <li><a href="#contact" data-link>Contact</a></li>
+  </ul>
+  <button class="menu-btn" id="menuBtn" aria-label="Open menu">Menu</button>
+</header>
+
+<!-- mobile menu -->
+<div class="menu-overlay" id="menuOverlay" role="dialog" aria-modal="true">
+  <button class="close" id="menuClose" aria-label="Close menu">Close</button>
+  <ul>
+    <li><a href="#about" data-link>About</a></li>
+    <li><a href="#book" data-link>Book</a></li>
+    <li><a href="#contact" data-link>Contact</a></li>
+  </ul>
+</div>
+
+<!-- language toggle -->
+<div class="lang" aria-label="Language">
+  <button aria-pressed="true">EN</button>
+  <span aria-hidden="true">/</span>
+  <button aria-pressed="false">NL</button>
+</div>
+
+<!-- PINNED PANELS — sections stack as sticky layers and reveal the next on scroll -->
+<main class="panels">
+
+<!-- HERO — curtain reveal: REVISIT (orange) / HISTORY (white) split open on scroll -->
+<section class="hero" id="top" data-section="hero">
+  <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
+  <div class="hero-curtain" aria-hidden="true">
+    <span class="curtain-word curtain-revisit" id="curtainRevisit">REVISIT</span>
+    <span class="curtain-word curtain-history" id="curtainHistory">HISTORY</span>
+  </div>
+  <!-- Accessible heading + sub-content (visible after the reveal completes) -->
+  <h1 class="visually-hidden">Revisit History — Acces, Antwerp</h1>
+  <div class="hero-eyebrow gsap-fade">
+    <span class="small-caps">A programme by Acces · Antwerpen · Est.&nbsp;1921</span>
+  </div>
+  <a href="#about" class="hero-scroll gsap-fade" data-link aria-label="Scroll for more">
+    <span>Scroll</span>
+    <span class="line" aria-hidden="true"></span>
+  </a>
+</section>
+
+<!-- INTRO / INDEX — the content that used to crowd the hero -->
+<section class="intro" id="about" data-section="about">
+  <div class="intro-grid">
+    <div class="postmark" aria-hidden="true">
+      <div class="stamp-inner">Acces<b>1921</b>Antwerpen</div>
+    </div>
+    <div class="intro-main">
+      <div class="eyebrow crumb gsap-fade">Revisit History · About</div>
+      <p class="intro-body" data-scrollread>
+        <span class="rh-mark on-light"><span class="rh-r">Revisit</span> <span class="rh-h">History</span></span> is a reflective programme by Acces for accessible knowledge-sharing. It revisits difficult histories one subject at a time — through walking tours, bike rides, and dialogue in motion — engaging the past to make the present more understandable and open to dialogue. Its current subject is <em>A&nbsp;Colonial&nbsp;Presence.</em>
+      </p>
+    </div>
+    <div class="intro-coords gsap-fade">
+      <div><b>51°13′N · 4°24′E</b></div>
+      <div><span>Antwerpen,&nbsp;BE</span></div>
+      <div><span>Subject&nbsp;N°01&nbsp;—&nbsp;A Colonial Presence</span></div>
+      <div><span>Walking · Cycling · Dialogue</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- SUB-UMBRELLA COVER — "A Colonial Presence": the current subject under Revisit
+     History. Opens the sub-umbrella; Formats / Route / Book below are its content.
+     The programme's method note is folded in here. -->
+<section class="subjects" id="colonial" data-section="colonial">
+  <div class="subjects-inner filed">
+    <div class="subjects-head">
+      <div class="eyebrow crumb gsap-fade">Revisit History · The Subject</div>
+      <h2 class="subject-title" data-split>A Colonial <em>Presence</em></h2>
+      <p class="subject-lede gsap-fade">
+        The first subject under <span class="rh-mark on-light"><span class="rh-r">Revisit</span> <span class="rh-h">History</span></span> — Antwerp and the colonial century, read through the visible and invisible traces the era pressed into the city's everyday surfaces.
+      </p>
+      <p class="subject-method gsap-fade">
+        The approach doesn't lean on traditional historical narrative; it starts from <em>connectedness,</em> <em>reflection,</em> and <em>structural insight</em> — making complex themes accessible without simplifying them, and inviting <em>active engagement,</em> <em>dialogue,</em> and <em>reinterpretation.</em>
+      </p>
+    </div>
+
+    <aside class="subject-index gsap-fade" aria-label="Subjects under study">
+      <div class="index-cap"><span class="eyebrow">Subjects under study</span></div>
+      <ol class="index-list">
+        <li class="is-active">
+          <span class="idx-n">N°01</span>
+          <span class="idx-name">A Colonial Presence</span>
+          <span class="idx-state">On view now</span>
+        </li>
+      </ol>
+      <p class="index-note">Further subjects will join <span class="rh-mark on-light"><span class="rh-r">Revisit</span> <span class="rh-h">History</span></span> in time — each a new lens on a difficult past.</p>
+      <p class="subject-guides">Led on the ground by guides who hold space for plural readings of the city. Conversations stay open; conclusions are not the point.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- FORMATS — content of the A Colonial Presence subject -->
+<section class="formats" id="formats" data-section="formats">
+  <div class="filed">
+  <div class="formats-head">
+    <div>
+      <div class="eyebrow crumb gsap-fade">A Colonial Presence · Public Formats</div>
+      <h2 data-split>Two ways to <em>walk through</em> a difficult century.</h2>
+    </div>
+    <div class="count gsap-fade">Nº&nbsp;02</div>
+  </div>
+
+  <div class="cards">
+    <article class="card gsap-fade">
+      <div class="ord">I<sup>·</sup></div>
+      <div>
+        <h3>Congo&nbsp;–&nbsp;Antwerp <em>(bicycle)</em></h3>
+        <div class="card-meta">
+          <span class="chip"><span class="dot"></span> 2 hours</span>
+          <span class="chip">Bike</span>
+          <span class="chip">Public</span>
+          <span class="chip">NL</span>
+        </div>
+      </div>
+      <p>A 2-hour bicycle tour exploring visible and invisible traces of colonial infrastructure in the city. Focused on observation, layered storytelling, and spatial awareness.</p>
+      <a class="card-cta" href="#book" data-link>Book this tour <span class="arrow" aria-hidden="true"></span></a>
+    </article>
+
+    <article class="card gsap-fade">
+      <div class="ord">II<sup>·</sup></div>
+      <div>
+        <h3>A Dialogue in <em>Motion</em></h3>
+        <div class="card-meta">
+          <span class="chip"><span class="dot"></span> 2 hours</span>
+          <span class="chip">Walking</span>
+          <span class="chip">Groups · Teams</span>
+          <span class="chip">By request</span>
+        </div>
+      </div>
+      <p>A 2-hour reflective walk for teams and institutions. This format fosters shared awareness and positions dialogue as a tool for collective meaning-making — tailored to stimulate internal reflection and group connection within a thematic urban setting.</p>
+      <a class="card-cta" href="mailto:hello@accesglo.be?subject=Dialogue%20in%20Motion%20—%20Booking%20enquiry">Enquire by email <span class="arrow" aria-hidden="true"></span></a>
+    </article>
+  </div>
+  </div><!-- /.filed -->
+</section>
+
+<!-- ROUTE MAP -->
+<section class="route" id="route" data-section="route">
+<div class="route-inner filed">
+  <div class="route-text">
+    <div class="eyebrow crumb gsap-fade">A Colonial Presence · The Route</div>
+    <h2 data-split>Antwerp,<br>traced on <em>two wheels.</em></h2>
+    <p>A 2-hour ride through five stops — visible and invisible traces of colonial infrastructure layered into the city's everyday surfaces.</p>
+    <ol class="legend">
+      <li><span class="num">i</span><span>Antwerpen-Centraal · departure</span><span class="km">0.0 km</span></li>
+      <li><span class="num">ii</span><span>De Keyserlei · arcade</span><span class="km">0.6 km</span></li>
+      <li><span class="num">iii</span><span>Meir · monuments</span><span class="km">1.4 km</span></li>
+      <li><span class="num">iv</span><span>Sint-Andrieskwartier</span><span class="km">2.7 km</span></li>
+      <li><span class="num">v</span><span>Het Steen · the river</span><span class="km">4.1 km</span></li>
+    </ol>
+  </div>
+
+  <div class="route-map" id="routeMap" aria-label="Map of the Congo – Antwerp bicycle route">
+    <div class="compass" aria-hidden="true">N</div>
+    <div class="scale" aria-hidden="true"><span class="bar-s"></span><span>1 km</span></div>
+
+    <!-- Route path (illustrative, not survey-accurate). Coordinates are 0–1000 x 0–750. -->
+    <svg viewBox="0 0 1000 750" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <pattern id="dashGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0 L0 0 L0 40" fill="none" stroke="rgba(22,19,17,.06)" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <!-- subtle street grid behind the route -->
+      <rect width="1000" height="750" fill="url(#dashGrid)"/>
+      <!-- a few illustrative streets -->
+      <path d="M 60 580 Q 280 540 460 500 T 880 320" stroke="rgba(22,19,17,.18)" stroke-width="1.4" fill="none"/>
+      <path d="M 120 120 Q 320 220 520 260 T 940 380" stroke="rgba(22,19,17,.14)" stroke-width="1.2" fill="none"/>
+      <path d="M 200 720 L 300 80" stroke="rgba(22,19,17,.10)" stroke-width="1" fill="none"/>
+      <path d="M 760 720 L 820 60" stroke="rgba(22,19,17,.10)" stroke-width="1" fill="none"/>
+
+      <!-- the river (Scheldt) -->
+      <path d="M 0 460 Q 180 420 360 470 T 720 520 T 1000 560 L 1000 750 L 0 750 Z"
+            fill="rgba(110,138,154,.22)" stroke="rgba(110,138,154,.45)" stroke-width="1.2"/>
+
+      <!-- the ROUTE itself — drawn-on by GSAP scrub.
+           We use a SOLID line for the reveal (so dashoffset works cleanly);
+           the dashed-archival look is added via a second overlay path. -->
+      <path id="routePath"
+            d="M 120 620 C 220 600, 320 540, 420 500 S 580 420, 660 360 S 820 260, 880 180"
+            fill="none"
+            stroke="#b13a2a"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round" />
+      <path d="M 120 620 C 220 600, 320 540, 420 500 S 580 420, 660 360 S 820 260, 880 180"
+            fill="none"
+            stroke="rgba(255,247,232,.55)"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-dasharray="10 8"
+            pointer-events="none" />
+    </svg>
+
+    <!-- archival pins, positioned in % so they scale with the map -->
+    <div class="pin" style="left:12%; top:83%">
+      <div class="dot">i</div><div class="tag">Centraal</div>
+    </div>
+    <div class="pin" style="left:32%; top:70%">
+      <div class="dot">ii</div><div class="tag">De Keyserlei</div>
+    </div>
+    <div class="pin" style="left:52%; top:54%">
+      <div class="dot">iii</div><div class="tag">Meir</div>
+    </div>
+    <div class="pin" style="left:70%; top:40%">
+      <div class="dot">iv</div><div class="tag">Sint-Andries</div>
+    </div>
+    <div class="pin" style="left:88%; top:24%">
+      <div class="dot">v</div><div class="tag">Het Steen</div>
+    </div>
+  </div>
+</div><!-- /.route-inner -->
+</section>
+
+<!-- BOOK -->
+<section class="book" id="book" data-section="book">
+  <div class="filed">
+  <div class="book-head">
+    <div class="eyebrow crumb gsap-fade">A Colonial Presence · Booking</div>
+    <h2 data-split>Reserve your <em>place.</em></h2>
+    <ol class="notes" aria-label="Important notes">
+      <li class="gsap-fade"><span class="n">i</span><span>Group size is limited to 15 participants per guide.</span></li>
+      <li class="gsap-fade"><span class="n">ii</span><span>Booking confirmation and practical details will be sent by email.</span></li>
+      <li class="gsap-fade"><span class="n">iii</span><span>Tours are given in Dutch.</span></li>
+      <li class="gsap-fade"><span class="n">iv</span><span>For institutions, schools and teams: please write to <a href="mailto:hello@accesglo.be" style="border-bottom:1px solid var(--ink)">hello@accesglo.be</a>.</span></li>
+    </ol>
+  </div>
+
+  <div class="book-embed gsap-fade">
+    <div class="embed-frame" aria-label="Luma booking widget">
+      <iframe
+        src="https://lu.ma/embed/user/acces?showsearch=0"
+        loading="lazy"
+        title="Acces — Revisit History booking (Luma)"
+        allow="fullscreen; payment"
+        referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <div class="embed-cap">
+      <span>Powered by Luma · live availability</span>
+      <a href="https://lu.ma/user/acces" target="_blank" rel="noopener">Open in Luma ↗</a>
+    </div>
+  </div>
+  </div><!-- /.filed -->
+</section>
+
+<!-- CONTACT -->
+<section class="contact" id="contact" data-section="contact">
+  <h2 data-split>
+    Talk with us — write <a href="mailto:hello@accesglo.be"><span class="mail">hello@accesglo.be</span></a>
+  </h2>
+  <div class="contact-meta gsap-fade">
+    <div><b>Acces vzw</b></div>
+    <div><span>Antwerpen, België</span></div>
+    <div><span>Mon — Fri</span></div>
+    <div><span>By appointment</span></div>
+  </div>
+</section>
+
+</main><!-- /.panels -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="left">
+    <a href="https://accesglo.be">Acces</a>
+    <a href="https://accesglo.be/projects">Projects</a>
+    <a href="https://accesglo.be/about">Who we are</a>
+    <a href="https://accesglo.be/team">Guides Team</a>
+    <a href="https://accesglo.be/sadjo">About Sadjo</a>
+  </div>
+  <div class="center">Image by Jonathan Ramael</div>
+  <div class="right">
+    <span>© Acces vzw · MMXXVI</span>
+    <a href="#top" data-link>Back to top ↑</a>
+  </div>
+</footer>
+
+<!-- COOKIES -->
+<div class="cookies" id="cookies">
+  <p class="ck-msg">This site uses cookies.</p>
+  <button id="cookieOk">Got it</button>
+</div>
+
+<script>
+(function(){
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ─── Split text into word-spans (for "data-split" elements) ───
+  // Wraps each word in <span class="word"><span class="w-inner">word</span></span>
+  // so we can animate transform/opacity per word without a paid SplitText plugin.
+  const splitWords = (el) => {
+    if (el.dataset.splitDone) return;
+    const html = el.innerHTML;
+    // Tokenize by spaces, but preserve <br>, <span>, <em>, <a>… as opaque units.
+    // Simple strategy: walk text nodes only.
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+    textNodes.forEach(node => {
+      const parts = node.nodeValue.split(/(\s+)/);
+      const frag = document.createDocumentFragment();
+      parts.forEach(part => {
+        if (!part) return;
+        if (/^\s+$/.test(part)){
+          frag.appendChild(document.createTextNode(part));
+        } else {
+          const word = document.createElement("span");
+          word.className = "word";
+          const inner = document.createElement("span");
+          inner.className = "w-inner";
+          inner.textContent = part;
+          word.appendChild(inner);
+          frag.appendChild(word);
+        }
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+    el.dataset.splitDone = "1";
+  };
+
+  document.querySelectorAll("[data-split], [data-scrollread]").forEach(splitWords);
+
+  // ─── Lenis smooth scroll ───
+  let lenis = null;
+  if (!reduce && window.Lenis){
+    lenis = new Lenis({
+      duration: 0.9,
+      easing: (t) => 1 - Math.pow(1 - t, 3),
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.4,
+    });
+    // If GSAP is present, its ticker will drive Lenis (see bridge below).
+    // If not, drive it from our own rAF.
+    if (!(window.gsap && window.ScrollTrigger)){
+      const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
+      requestAnimationFrame(raf);
+    }
+  }
+
+  // ─── GSAP + ScrollTrigger ───
+  if (window.gsap && window.ScrollTrigger){
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Bridge Lenis ↔ ScrollTrigger
+    if (lenis){
+      lenis.on("scroll", ScrollTrigger.update);
+      gsap.ticker.add((time) => lenis.raf(time * 1000));
+      gsap.ticker.lagSmoothing(0);
+    }
+
+    // Hero — staggered word drop-in on load
+    const heroH = document.querySelector(".hero-h");
+    if (heroH){
+      gsap.to(heroH.querySelectorAll(".w-inner"), {
+        y: 0, opacity: 1, duration: 1.15, ease: "expo.out",
+        stagger: 0.06, delay: 0.2,
+      });
+    }
+    gsap.utils.toArray(".hero .gsap-fade").forEach((el, i) => {
+      gsap.to(el, { opacity: 1, y: 0, duration: .9, ease: "power3.out", delay: .8 + i * .12 });
+    });
+
+    // Generic fade-in for elements scrolled into view
+    gsap.utils.toArray(".gsap-fade").forEach((el) => {
+      if (el.closest(".hero")) return;
+      gsap.fromTo(el,
+        { opacity: 0, y: 18 },
+        {
+          opacity: 1, y: 0, duration: 1, ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 85%", once: true }
+        }
+      );
+    });
+
+    // Section heading word reveal (non-hero)
+    gsap.utils.toArray("[data-split]").forEach((el) => {
+      if (el.closest(".hero")) return; // already animated on load
+      const words = el.querySelectorAll(".w-inner");
+      if (!words.length) return;
+      gsap.fromTo(words,
+        { y: "110%", opacity: 0 },
+        {
+          y: 0, opacity: 1, duration: 1, ease: "expo.out",
+          stagger: 0.035,
+          scrollTrigger: { trigger: el, start: "top 80%", once: true }
+        }
+      );
+    });
+
+    // SCROLL-READ: words tint from faded to full as the paragraph scrolls through
+    gsap.utils.toArray("[data-scrollread]").forEach((el) => {
+      const words = el.querySelectorAll(".w-inner");
+      if (!words.length) return;
+      gsap.set(words, { opacity: .18, y: 0 });
+      gsap.to(words, {
+        opacity: 1,
+        stagger: { each: 0.05, from: "start" },
+        ease: "none",
+        scrollTrigger: {
+          trigger: el,
+          start: "top 75%",
+          end: "bottom 55%",
+          scrub: true,
+        }
+      });
+    });
+
+    // Compact nav after the curtain has fully opened (~100vh of scroll into
+    // a 200vh-tall hero panel = ~50% progress).
+    const bar = document.querySelector(".bar");
+    const heroEl = document.querySelector(".hero");
+    if (bar && heroEl){
+      ScrollTrigger.create({
+        trigger: heroEl,
+        start: "top top",
+        end: "bottom top",
+        onUpdate: (self) => {
+          // Curtain animation completes at ~85vh of scroll → ~42.5% of a
+          // 200vh-tall panel. Fade the bar in just past that.
+          if (self.progress > 0.45) bar.classList.add("compact");
+          else bar.classList.remove("compact");
+        },
+        onLeave: () => bar.classList.add("compact"),
+        onEnterBack: (self) => {
+          if (self.progress > 0.45) bar.classList.add("compact");
+          else bar.classList.remove("compact");
+        },
+      });
+    }
+
+    // ─── CURTAIN REVEAL: REVISIT slides up, HISTORY slides down ───
+    // The hero section is given EXTRA document height (200vh) so it acts as
+    // its own pinned scene: the first 100vh of scroll plays the curtain out,
+    // the rest of the page (intro, approach, …) sits beyond it and only
+    // begins to advance AFTER the curtain has finished.
+    const cRevisit = document.getElementById("curtainRevisit");
+    const cHistory = document.getElementById("curtainHistory");
+    if (cRevisit && cHistory && heroEl){
+      gsap.set([cRevisit, cHistory], { willChange: "transform" });
+      gsap.to(cRevisit, {
+        yPercent: -110,
+        ease: "none",
+        scrollTrigger: {
+          trigger: heroEl,
+          start: "top top",
+          end: () => "+=" + window.innerHeight * 0.85,
+          scrub: 0.4,
+          invalidateOnRefresh: true,
+        }
+      });
+      gsap.to(cHistory, {
+        yPercent: 110,
+        ease: "none",
+        scrollTrigger: {
+          trigger: heroEl,
+          start: "top top",
+          end: () => "+=" + window.innerHeight * 0.85,
+          scrub: 0.4,
+          invalidateOnRefresh: true,
+        }
+      });
+    }
+
+    // ─── ROUTE MAP: draw the path on scroll + reveal pins in order ───
+    // The route section is 220vh tall in the document; for the first 100vh of
+    // scroll the panel is pinned and the path scrubs in. The remaining 120vh
+    // is dwell/spacer room before Book begins to pin over the top.
+    const routePath = document.getElementById("routePath");
+    const routeSec  = document.getElementById("route");
+    if (routePath && routeSec){
+      const len = routePath.getTotalLength();
+      gsap.set(routePath, {
+        strokeDasharray: len,
+        strokeDashoffset: len,
+      });
+      gsap.to(routePath, {
+        strokeDashoffset: 0,
+        ease: "none",
+        scrollTrigger: {
+          trigger: routeSec,
+          // Draw completes during the first viewport of scroll into the panel,
+          // matching the panel's pin window.
+          start: "top top",
+          end: () => "+=" + window.innerHeight * 0.85,
+          scrub: 0.5,
+          invalidateOnRefresh: true,
+        }
+      });
+
+      // pins fade in as the route reaches each, paced with the draw
+      const pins = Array.from(routeSec.querySelectorAll(".pin"));
+      gsap.set(pins, { opacity: 0, scale: .6, y: 8 });
+      gsap.to(pins, {
+        opacity: 1, scale: 1, y: 0,
+        ease: "back.out(2)",
+        duration: .5,
+        stagger: 0.18,
+        scrollTrigger: {
+          trigger: routeSec,
+          start: "top top-=" + window.innerHeight * 0.1,
+          end: () => "+=" + window.innerHeight * 0.8,
+          toggleActions: "play none none reverse",
+        }
+      });
+    }
+
+    // ─── PINNED-PANELS: active section tracking + incoming-edge shadow ───
+    // Each section is sticky; the "active" one is the one currently filling
+    // the viewport (its top has hit the top of the viewport).
+    const panels = gsap.utils.toArray(".panels > section");
+    const navLinks = document.querySelectorAll(".nav-list a[href^='#']");
+    const linkFor = (id) => {
+      for (const a of navLinks){
+        if (a.getAttribute("href") === "#" + id) return a;
+      }
+      return null;
+    };
+    const setActiveSection = (id) => {
+      navLinks.forEach(a => a.classList.remove("is-active"));
+      const a = linkFor(id);
+      if (a) a.classList.add("is-active");
+    };
+
+    panels.forEach((panel, i) => {
+      const next = panels[i + 1];
+
+      // The panel becomes "active" once its top reaches the viewport top
+      ScrollTrigger.create({
+        trigger: panel,
+        start: "top top",
+        end: () => next ? "+=" + window.innerHeight : "bottom bottom",
+        onEnter:     () => setActiveSection(panel.id),
+        onEnterBack: () => setActiveSection(panel.id),
+      });
+
+      // When the NEXT panel is about to slide up over this one, mark the
+      // incoming panel so its top-edge shadow fades in.
+      if (next){
+        ScrollTrigger.create({
+          trigger: next,
+          start: "top bottom",   // next's top hits viewport bottom
+          end:   "top top",      // next's top hits viewport top
+          onEnter:     () => next.classList.add("is-incoming"),
+          onLeave:     () => next.classList.remove("is-incoming"),
+          onEnterBack: () => next.classList.add("is-incoming"),
+          onLeaveBack: () => next.classList.remove("is-incoming"),
+        });
+      }
+    });
+
+    // Initial active = first panel
+    if (panels[0]) setActiveSection(panels[0].id);
+
+    // In-page links → Lenis
+    document.querySelectorAll("a[data-link]").forEach(a => {
+      a.addEventListener("click", (e) => {
+        const href = a.getAttribute("href");
+        if (!href || !href.startsWith("#")) return;
+        const t = document.querySelector(href);
+        if (!t) return;
+        e.preventDefault();
+        if (lenis) lenis.scrollTo(t, { offset: 0, duration: 1.0 });
+        else t.scrollIntoView({ behavior: "smooth" });
+        document.getElementById("menuOverlay")?.classList.remove("open");
+      });
+    });
+
+    ScrollTrigger.refresh();
+  } else {
+    // Fallback: just show everything if GSAP failed to load
+    document.querySelectorAll(".w-inner").forEach(el => { el.style.transform = "none"; el.style.opacity = 1; });
+    document.querySelectorAll(".gsap-fade").forEach(el => { el.style.transform = "none"; el.style.opacity = 1; });
+  }
+
+  // cookies
+  const cookies = document.getElementById("cookies");
+  document.getElementById("cookieOk").addEventListener("click", () => {
+    cookies.classList.add("hidden");
+    try { localStorage.setItem("rh-cookies", "1"); } catch(_){}
+  });
+  try { if (localStorage.getItem("rh-cookies")) cookies.classList.add("hidden"); } catch(_){}
+
+  // mobile menu
+  const overlay = document.getElementById("menuOverlay");
+  document.getElementById("menuBtn").addEventListener("click", () => overlay.classList.add("open"));
+  document.getElementById("menuClose").addEventListener("click", () => overlay.classList.remove("open"));
+  overlay.addEventListener("click", (e) => { if (e.target.tagName === "A") overlay.classList.remove("open"); });
+
+  // language toggle (visual only)
+  document.querySelectorAll(".lang button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
