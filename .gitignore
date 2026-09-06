@@ -1,7 +1,8 @@
 dump/
 .vscode/
 .claude/
-
+node_modules/
 
 .env
 CLAUDE.md
+package-lock.json
