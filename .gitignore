@@ -1,4 +1,5 @@
 dump/
+.vscode/
 .claude
 .env
 CLAUDE.md
