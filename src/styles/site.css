@@ -1,0 +1,1851 @@
+/* ─────────────────────────────────────────────────────────────
+   Revisit History — archival editorial
+   ───────────────────────────────────────────────────────────── */
+
+   @font-face{
+   	font-family: "Tactic";
+   	src: url("/fonts/Tactic-Regular.woff") format("woff"),
+   	url("/fonts/Tactic-Regular.ttf")  format("truetype");
+   	font-weight: 400;
+   	font-style: normal;
+   	font-display: swap;
+   }
+
+   :root{
+   	--paper:        #e9e3d4;
+   	--paper-warm:   #efe8d6;
+   	--ink:          #161311;
+   	--ink-soft:     #2a2622;
+
+   	--sky:          #9ccbe6;
+   	--sky-deep:     #6e8a9a;
+   	--sky-pale:     #cfdde4;
+
+   	--ochre:        #c98a3a;
+   	--rose:         #c98e8a;
+   	--stamp:        #b13a2a;
+   	--moss:         #6b7a4c;
+
+   	/* Official brand color — used for the word "Revisit" everywhere */
+   	--brand-orange: #e96a1f;
+   	/* Companion white for "History" against dark/colored backgrounds */
+   	--brand-white:  #ffffff;
+
+  /* ── "A Colonial Present" ── the subject is one flat, edge-to-edge colour field
+	 spanning cover + Formats + Route + Book. About/Contact are flat white. Entering
+	 and leaving that colour is what makes the umbrella felt — there is no card,
+	 sheet or frame. To strengthen the nesting, deepen this colour; never box the
+	 content. */
+	 --subject-bg:   #d7cdb4;
+  /* Emphasis blue for use ON --subject-bg. The page-wide --sky-deep drops to 2.3:1
+	 against it, which fails even at display size; this reads 4.86:1. */
+	 --sky-ink:      #3f5666;
+  /* Ground for the subject track's horizontal rail, one tone step off
+	 --subject-bg so the moving panels read as a different field from the standing
+	 cover beside them. See the long note on `.track-viewport` for why it is
+	 lighter rather than darker — every colour the track uses clears 4.5:1 here,
+	 and fails on a deeper tan. Push it further from --subject-bg by going LIGHTER. */
+	 --track-bg:     var(--paper-warm);
+  /* Archival red for small labels ON --subject-bg. --stamp is ~4.7:1 on paper but
+	 only 3.79:1 on the darker subject ground; this reads 5.18:1. */
+	 --stamp-deep:   #94271a;
+
+	 --page-x: clamp(20px, 4vw, 56px);
+	 --bar-pad: clamp(20px, 2.8vw, 36px);
+	 --max:   1760px;
+
+	 --t-fast: 280ms cubic-bezier(.22,.61,.36,1);
+	 --t-slow: 900ms cubic-bezier(.22,.61,.36,1);
+	}
+
+	*,*::before,*::after{box-sizing:border-box}
+	html,body{margin:0;padding:0}
+	html{
+		background:#ffffff;
+		color:var(--ink);
+		font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+		-webkit-font-smoothing:antialiased;
+		text-rendering:optimizeLegibility;
+	}
+	body{
+		min-height:100vh;
+		overflow-x:hidden;
+		background:#ffffff;
+	}
+
+	a{color:inherit;text-decoration:none}
+/* The ONE exception to the no-lines rule. A link buried mid-sentence needs a cue
+   that isn't colour alone (WCAG 1.4.1); standalone links elsewhere use colour +
+   hover instead. Kept as faint as it can be and still do the job. */
+   .inline-link{
+   	text-decoration: underline;
+   	text-decoration-thickness: 1px;
+   	text-decoration-color: rgba(22,19,17,.22);
+   	text-underline-offset: .18em;
+   	transition: text-decoration-color var(--t-fast), color var(--t-fast);
+   }
+   .inline-link:hover{ color: var(--sky-deep); text-decoration-color: rgba(110,138,154,.6) }
+   img{display:block;max-width:100%}
+   button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+   ::selection{ background:var(--sky); color:var(--ink) }
+
+/* ─── Brand mark rule ─── */
+/* "Revisit History" must always appear with Revisit in orange + History in
+   white (on dark backings) or near-black (where white would vanish on paper). */
+   .rh-mark{ font-family: "Tactic", "Helvetica Neue", sans-serif; font-weight: 400; letter-spacing: -.02em; text-transform: none; }
+   .rh-r{ color: var(--brand-orange); }
+/* Every surface on this site is light — paper, white, or --subject-bg — so the
+   companion white would simply vanish. History therefore renders in ink by
+   DEFAULT and `.rh-mark.on-dark` is the escape hatch if a dark backing is ever
+   introduced. (This replaced a per-section allow-list that had to be extended by
+   hand every time a panel was added, and silently produced invisible text when
+   someone forgot.) */
+   .rh-h{ color: var(--ink); }
+   .rh-mark.on-dark .rh-h{ color: var(--brand-white); }
+
+/* The wordmark also appears inside breadcrumb eyebrows and running body copy.
+   There it must take the host's case, tracking and weight — only the two-tone
+   colouring carries over — or an uppercase eyebrow would break to mixed case. */
+   .eyebrow .rh-mark,
+   .intro-support .rh-mark,
+   .manifesto-support .rh-mark,
+   .antwerp-body .rh-mark,
+   .index-note .rh-mark{
+   	font-family: inherit; font-weight: inherit;
+   	letter-spacing: inherit; text-transform: inherit;
+   }
+
+/* ─── Lenis ─── */
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}
+.lenis.lenis-stopped{overflow:hidden}
+
+/* ─── Type system ─── */
+.display{
+	font-family:"Tactic", "Helvetica Neue", sans-serif;
+	font-variation-settings:"opsz" 144,"SOFT" 30,"WONK" 0;
+	font-weight:430;
+	letter-spacing:-0.025em;
+	line-height:.92;
+	font-style:normal;
+}
+.small-caps{
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	text-transform:uppercase;
+	letter-spacing:.22em;
+	font-size:11px;
+	font-weight:500;
+}
+.eyebrow{
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	text-transform:uppercase;
+	letter-spacing:.32em;
+	font-size:10.5px;
+	font-weight:500;
+	color:var(--ink-soft);
+}
+
+/* ─── BAR: parent-style stacked wordmark + list ─── */
+.bar{
+	position:fixed; inset:0 0 auto 0; z-index:60;
+	display:grid; grid-template-columns: 1fr 1fr;
+	padding: var(--bar-pad) var(--page-x);
+	pointer-events:none;
+	mix-blend-mode: normal;
+	/* Bar starts invisible — the curtain is the hero. Fades in once curtain opens. */
+	opacity: 0;
+	transition: background var(--t-fast), backdrop-filter var(--t-fast), padding var(--t-fast), opacity 400ms cubic-bezier(.22,.61,.36,1);
+}
+.bar > *{ pointer-events:auto }
+/* Brand wordmark sits at compact size always now (curtain is the hero motion). */
+.brand{
+	transform-origin: top left;
+}
+.bar.compact{
+	padding: 14px var(--page-x);
+	/*background: color-mix(in srgb, var(--paper) 80%, transparent);*/
+	backdrop-filter: blur(14px) saturate(1.1);
+	-webkit-backdrop-filter: blur(14px) saturate(1.1);
+	align-items: center;
+	opacity: 1;
+}
+/* Brand stays at its CSS-baseline (compact) size — GSAP morph drives the scale. */
+.bar.compact .brand .b{ margin-top: 0 }
+.bar.compact .nav-list{
+	flex-direction: row;
+	gap: 28px;
+	font-size: 14px;
+	letter-spacing: .04em;
+	font-weight: 500;
+	justify-self: end;
+	align-items: center;
+}
+.bar.compact .nav-list a{ font-size: 30px }
+
+.brand{
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  /* Compact baseline: matches nav-item size so logo + menu read as one row.
+	 GSAP scales it up on hero. */
+	 font-size: 32px;
+	 line-height: 1;
+	 letter-spacing:-.02em;
+	 text-transform: none;
+	 display:flex; flex-direction:column;
+	 gap: 0;
+	 align-self:center;
+	 width: max-content;
+	 transition: opacity var(--t-fast);
+	}
+	.brand .b{ font-size: .56em; line-height: 1; margin-top: 3px; }
+	.brand .a{ display:block }
+	.brand .b{
+		display:block;
+		font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:300;
+		font-variation-settings:"opsz" 144,"WONK" 1;
+		font-size: .58em;
+		color: var(--sky-deep);
+		letter-spacing:-.015em;
+		margin-top: -4px;
+	}
+
+	.nav-list{
+		list-style:none; margin:0; padding:0;
+		font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+  /* Horizontal always. The bar only ever appears in its .compact form; keeping the
+	 base layout horizontal too means toggling .compact only fades opacity — it never
+	 snaps the menu to a vertical stack that would flash during the fade-out. */
+	 font-size: 14px;
+	 line-height: 1.03;
+	 letter-spacing: .04em;
+	 text-align:left;
+	 justify-self:end;
+	 align-self:center;
+	 display:flex; flex-direction:row; gap: 28px; align-items:center;
+	}
+	.nav-list li{ display:block; }
+	.nav-list a{
+		display:inline-block;
+		position:relative;
+		padding: 0;
+		transition: color var(--t-fast), transform var(--t-fast);
+	}
+/* No underline sweep — hover is carried by colour + a small lift instead of a rule. */
+.nav-list a:hover{ color: var(--sky-deep); transform: translateY(-1px) }
+.nav-list a .arrow{
+	display:inline-block; margin-left: .2em;
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:300;
+	font-variation-settings:"opsz" 144,"WONK" 1;
+	transform: translateY(-.05em);
+	transition: transform var(--t-fast);
+}
+.nav-list a:hover .arrow{ transform: translate(.06em, -.12em) }
+
+/* fixed corner language toggle (parent mimic) */
+.lang{
+	position:fixed; bottom: 16px; left:var(--page-x); z-index:50;
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+	display:flex; gap:6px;
+}
+.lang button{ opacity:.55; padding:2px 0; }
+.foot-mini{
+	position:fixed; bottom: 16px; left: 0; right: 0; z-index: 49;
+	display:flex; justify-content:center; gap: 22px;
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:13px; letter-spacing:.04em;
+	pointer-events:none;
+}
+.foot-mini a{ pointer-events:auto; opacity:.7 }
+.foot-mini a:hover{ opacity:1; color: var(--sky-deep) }
+
+/* mobile menu trigger */
+.menu-btn{
+	display:none; align-self:start;
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+	font-size: 14px; letter-spacing:.18em; text-transform:uppercase;
+	/* Solid fill instead of an outline — the affordance is the block, not a frame. */
+	padding: 9px 15px; background: var(--ink); color: var(--paper);
+	transition: background var(--t-fast);
+}
+.menu-btn:hover{ background: var(--stamp) }
+.menu-overlay{
+	position:fixed; inset:0; background:var(--paper); z-index:60;
+	display:none; flex-direction:column; padding: 22px var(--page-x);
+}
+.menu-overlay.open{ display:flex }
+.menu-overlay .close{
+	align-self:flex-end;
+	font-size:14px; letter-spacing:.18em; text-transform:uppercase;
+	padding:9px 15px; background: var(--ink); color: var(--paper);
+	transition: background var(--t-fast);
+}
+.menu-overlay .close:hover{ background: var(--stamp) }
+.menu-overlay ul{
+	list-style:none; margin:auto 0; padding:0;
+	display:flex; flex-direction:column; gap: 8px;
+}
+.menu-overlay a{
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+	font-size: clamp(40px, 11vw, 80px);
+	letter-spacing:-.02em; line-height:1;
+}
+
+/* ─── HERO ─── */
+.hero{
+	min-height: 100svh;
+	position: relative;
+	padding: 0 var(--page-x);
+	overflow: hidden;
+	isolation: isolate;
+	display: grid;
+	grid-template-rows: 1fr auto;
+	align-items: end;
+	padding-bottom: 96px;
+}
+.hero-bg{
+	position:absolute;
+	top: 0; left: 0; right: 0; height: 100vh;
+	z-index:-1;
+	/*background-image:url("/3067e280-8af9-4025-b8d5-8890bff622b6.jpg");*/
+	background-size:cover;
+	background-position:center 35%;
+	filter: saturate(.72) contrast(.96) brightness(1.03);
+	will-change: transform, opacity;
+}
+.hero-bg::after{
+	content:""; position:absolute; inset:0;
+	background:
+	linear-gradient( to bottom, rgba(233,227,212,.55) 0%, rgba(233,227,212,.15) 28%, rgba(233,227,212,.05) 55%, rgba(233,227,212,.92) 100%),
+	linear-gradient( to right,  rgba(233,227,212,.35) 0%, rgba(233,227,212,0)   30%, rgba(233,227,212,0) 70%, rgba(233,227,212,.45) 100%);
+}
+/* The postmark stamp that used to sit in the About column has been removed
+   entirely (markup + CSS). Its ring-and-cancellation-rule construction was all
+   lines; once those went it was left as an empty tinted blob and the user cut it. */
+
+/* visually-hidden — screen-reader-only */
+.visually-hidden{
+	position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+	overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ─── Curtain reveal ─── */
+.hero-curtain{
+	position: absolute;
+  /* Pin the curtain to the visible viewport so it doesn't stretch over the
+	 section's extra (200vh) scroll-spacer height. */
+	 top: 0; left: 0; right: 0;
+	 height: 100vh;
+	 z-index: 5;
+	 display: grid;
+	 grid-template-rows: 1fr 1fr;
+	 pointer-events: none;
+	 overflow: hidden;
+	}
+	.curtain-word{
+		display: flex; align-items: center; justify-content: center;
+		font-family: "Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-weight: 500;
+  /* The Tactic file we have is Regular — we fake the bold look via the
+	 letter sizing + tight tracking. */
+	 font-size: clamp(96px, 22vw, 360px);
+	 line-height: .82;
+	 letter-spacing: -0.04em;
+	 text-transform: uppercase;
+	 will-change: transform;
+	 user-select: none;
+	}
+	.curtain-revisit{
+		color: var(--brand-orange);
+		align-items: flex-end;     /* sits against the horizontal split */
+		padding-bottom: clamp(4px, 0.6vw, 14px);
+	}
+	.curtain-history{
+		color: var(--brand-white);
+		/* Subtle ink stroke so the white word stays legible over light paper */
+  /*-webkit-text-stroke: 1px rgba(22,19,17,.55);
+  text-shadow: 0 2px 14px rgba(22,19,17,.18);*/
+  align-items: flex-start;
+  padding-top: clamp(4px, 0.6vw, 14px);
+}
+/* On wide screens, slightly bigger; on narrow, slightly smaller */
+@media (min-width: 1600px){ .curtain-word{ font-size: 360px } }
+.hero-eyebrow{
+	position: absolute;
+  /* Anchor to the bottom of the visible viewport (the section is 200vh
+	 tall so plain "bottom: 32px" would land off-screen). */
+	 top: calc(100vh - 52px); left: var(--page-x);
+	 font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:12px;
+	 letter-spacing:.22em; text-transform:uppercase; font-weight:500;
+	}
+	.hero-scroll{
+		position: absolute;
+		top: calc(100vh - 52px); right: var(--page-x);
+		font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size:11px;
+		letter-spacing:.22em; text-transform:uppercase; font-weight:500;
+		display:flex; align-items:center; gap:14px;
+		opacity:.7;
+		transition: opacity var(--t-fast);
+	}
+	.hero-scroll:hover{ opacity:1 }
+/* Was a 56px rule + a chevron drawn from two borders. Now a single solid
+   arrowhead — a shape, not a line. */
+   .hero-scroll .line{
+   	display:inline-block; width: 16px; height: 11px;
+   	background: var(--ink);
+   	clip-path: polygon(0 0, 100% 50%, 0 100%);
+   	transition: transform var(--t-fast);
+   }
+   .hero-scroll:hover .line{ transform: translateX(5px) }
+
+/* ─── INTRO / INDEX section ─── */
+.intro{
+	padding: 0 var(--page-x);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.intro-grid{
+	display:grid;
+  /* Two columns since the postmark was removed — body copy now starts at the page
+	 gutter instead of being indented past a 200px stamp column. */
+	 grid-template-columns: 1fr;/* 220px;*/
+	 gap: 64px;
+	 align-items:start;
+	 width: 100%;
+	 max-width: var(--max);
+	}
+	.intro-main{ min-width: 0; }
+	/* The About lede is display type, set to the same recipe as .manifesto h2 — both
+	   are umbrella-level panels and should shout at the same volume. Clamped on BOTH
+	   axes like every other pinned-panel heading — sized on width alone it overflows
+	   a short viewport and the three support paragraphs below it disappear. */
+	.intro-body{
+		font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+		font-variation-settings:"opsz" 144,"SOFT" 40;
+		font-size: clamp(28px, min(5.4vw, 8vh), 104px);
+		line-height: .95;
+		letter-spacing: -.032em;
+		max-width: 20ch;
+		text-wrap: balance;
+		margin: clamp(8px,1.4vh,14px) 0 0;
+	}
+/* Supporting copy under the About lede. Three columns so the block stays short
+   vertically — these panels are pinned to 100vh, so height is the scarce resource
+   and horizontal space is the free one. */
+   .intro-support{
+   	display:grid; grid-template-columns: repeat(3, 1fr);
+   	gap: 26px 44px;
+   	margin-top: clamp(24px, 3.4vh, 46px);
+   }
+   /* No `ch` cap on the grid — the three columns run the full --max width. The size
+      clamp is what keeps the measure sane: at 1760px the columns are ~557px, which
+      is ~70ch at 16px (unreadable) but ~50ch at 22px. Bigger type and full width
+      are the same fix here, not opposing ones. Below 1100px the grid collapses to
+      one column, and the measure cap moves onto the paragraph — see the media
+      query — since an uncapped single column would run ~120 characters a line.
+      (Tactic's `ch` is ~0.67em, so 46ch there is ~61 characters, not 46.) */
+   .intro-support p{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+   	font-variation-settings:"opsz" 24;
+   	font-size: clamp(16px, 1.25vw, 22px); line-height: 1.5; letter-spacing:-.002em;
+   	margin: 0; color: var(--ink-soft);
+   }
+   .intro-coords{
+   	display:grid; gap:8px;
+   	font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+   	text-align:right;
+   	font-weight: 500;
+   }
+   .intro-coords b{ font-weight:500 }
+   .intro-coords span{ opacity:.7; font-weight: 400 }
+   @media (max-width: 1100px){
+   	.intro-grid{ grid-template-columns: 1fr; gap: 32px }
+   	.intro-coords{ text-align:left }
+   	.intro-support{ grid-template-columns: 1fr; gap: 18px }
+   	.intro-support p{ max-width: 46ch }
+   }
+
+/* ─── MANIFESTO ─── umbrella-level panel (white, outside the subject). Carries the
+   one line the whole programme turns on, at full display scale, with its two
+   supporting paragraphs kept small and quiet beneath it. */
+   .manifesto{
+   	padding: 0 var(--page-x);
+   	display: flex; align-items: center; justify-content: center;
+   }
+   .manifesto-inner{ width: 100%; max-width: var(--max); }
+   .manifesto h2{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+   	font-variation-settings:"opsz" 144,"SOFT" 40;
+   	font-size: clamp(28px, min(5.4vw, 8vh), 104px);
+   	line-height: .95; letter-spacing: -.032em;
+   	margin: clamp(8px,1.4vh,14px) 0 0; max-width: 20ch; text-wrap: balance;
+   }
+   .manifesto h2 em{
+   	font-style: italic; font-weight: 300; color: var(--sky-deep);
+   	font-variation-settings:"opsz" 144,"WONK" 1;
+   }
+   .manifesto-support{
+   	display:grid; grid-template-columns: repeat(2, minmax(0, 42ch));
+   	gap: 26px 56px;
+   	margin-top: clamp(28px, 4vh, 52px);
+   }
+   .manifesto-support p{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+   	font-variation-settings:"opsz" 24;
+   	font-size: 16px; line-height: 1.55; margin: 0; color: var(--ink-soft);
+   }
+   @media (max-width: 1100px){
+   	.manifesto-support{ grid-template-columns: 1fr; gap: 18px }
+   }
+
+/* ─── SUBJECT TRACK ─── the "A Colonial Present" panel, split in two: the cover
+   stands still on the left, a rail of panels scrubs past horizontally on the
+   right. It replaced the separate subject-cover and Antwerp panels (Antwerp is
+   the rail's first panel), and the rail is what the old `.antwerp` rules used to
+   dress — they are gone with it.
+
+   Modelled on GreenSock's horizontal-scroll pens (codepen YzygYvM, WNjaxKp) but
+   pinned with `position: sticky` like every other panel here, NOT with
+   ScrollTrigger's `pin` — see the note in SubjectTrackPanel.tsx for why the
+   spacer <div> that `pin` injects would break the snap table.
+
+   The section's HEIGHT lives with the hero's and route's, further down beside
+   the sticky rule, because that rule is later in the file and would otherwise
+   win. Everything here is the content of its one visible viewport. */
+   .subject-track{
+   	padding: 0;
+   	overflow: hidden;
+   }
+/* Only the section's FIRST viewport is ever on screen — it is stuck at top:0 for
+   the whole run — so the stage is absolutely positioned into that viewport and
+   measures exactly one screen no matter how tall the section is. */
+   .track-stage{
+   	position: absolute; inset: 0 0 auto 0;
+   	height: 100vh;
+   	display: grid;
+   	grid-template-columns: minmax(0, 30%) minmax(0, 1fr);
+   	gap: clamp(20px, 2.6vw, 48px);
+  /* TOP-aligned, not centred (2026-09-03, at the site owner's request). The cover
+	 is a standing marker: the subject's name holds one position while four panels
+	 of different shapes pass it. Centred, it drifted up and down against them. */
+   	align-items: start;
+   	padding-left: var(--page-x);
+   }
+
+/* ── the standing cover ──
+   Thin by intent — breadcrumb, name, lede, nothing else. The method paragraphs it
+   used to carry are rail panel IV now.
+   Same type recipes the cover had as a full-width panel, re-clamped for a column
+   less than a third as wide. These are 100vh `overflow: hidden` panels: type
+   sized on width alone overflows a short viewport and the copy is simply gone, so
+   every size here is clamped on BOTH axes and verified against innerHeight at
+   ~618px tall. The top padding clears the fixed bar, which the old centred
+   layout never had to think about. */
+   .track-cover{
+   	min-width: 0;
+   	padding-top: clamp(92px, 13vh, 148px);
+   }
+   .track-cover .subject-title{
+   	font-size: clamp(26px, min(3.4vw, 6.4vh), 54px);
+   	margin: clamp(6px,1.2vh,12px) 0 clamp(10px,1.8vh,18px);
+   }
+   .track-cover .subject-lede{
+   	font-size: clamp(14px, min(1.02vw, 1.85vh), 17px);
+   	max-width: none;
+   }
+
+/* ── the rail ──
+   `.track-viewport` is the window; `.track-rail` lays the panels out in a row
+   that overflows it to the right, and the tween slides them left. Each panel is
+   `flex: 0 0 100%` — exactly the window's width — which is what makes the
+   tween's `xPercent: -100 * steps` land each one flush. Never give a panel its
+   own width. */
+/* THE RAIL HAS ITS OWN GROUND, one tone step off the cover's (2026-09-03, at the
+   site owner's request: "the horizontally scrolling pages should not be the same
+   BG color as the left side"). This is a documented departure from the
+   one-flat-field rule in CLAUDE.md, and it stays inside that rule's actual
+   reasoning: the distinction is carried by a FILL over a full-height,
+   edge-to-edge territory, not by a card, mat, keyline or inset — there is still
+   nothing here you could call a frame. Cover and rail read as two fields of the
+   same paper, and both remain inside the subject's colour world (Formats and Book
+   below are still --subject-bg, About and Contact still white), so the umbrella
+   cue survives the split.
+   --paper-warm, NOT a deeper tan, and that is a contrast result rather than a
+   preference: on #efe8d6 every colour the track uses clears 4.5:1 — --sky-ink
+   6.28:1, --stamp-deep 6.70:1, --ink 15.14:1. The obvious darker candidate
+   (#c9bd9f) drops --sky-ink to 4.12:1 and --stamp-deep to 4.39:1, i.e. the
+   emphasis italics and the numerals both fail. If you want the step stronger,
+   move --track-bg LIGHTER, not darker. The step itself is 1.29:1 against
+   --subject-bg: legible as a change of field, far too little to read as a line. */
+   .track-viewport{
+   	position: relative; height: 100%; min-width: 0;
+   	overflow: hidden;
+   	background: var(--track-bg);
+   }
+   .track-rail{
+   	display: flex; flex-wrap: nowrap;
+   	width: 100%; height: 100%;
+   }
+   .track-panel{
+   	flex: 0 0 100%; height: 100%;
+   	position: relative; min-width: 0;
+   	display: flex; flex-direction: column; justify-content: center;
+   	will-change: transform;
+   }
+/* THE RAIL HAS ITS OWN INSET, and it is not optional. Set flush to the column
+   edge the copy sat hard against the cover/rail colour boundary — left bearings
+   and the numeral were visibly clipped by `.track-viewport`'s overflow. One
+   variable so the numeral, the copy and the image's caption all share an edge;
+   the IMAGE itself deliberately ignores it and bleeds to the rail's edges. */
+   .track-panel{ --track-inset: clamp(22px, 2.6vw, 52px) }
+   .track-panel--statement,
+   .track-panel--method,
+   .track-panel--text{ padding: 0 var(--page-x) 0 var(--track-inset) }
+/* Archival numeral, parked at a constant height clear of the fixed top bar so it
+   does not drift with each panel's content. --stamp-deep, not --stamp: the
+   lighter red only reads 3.79:1 on the subject ground. */
+   .track-ord{
+   	position: absolute; top: clamp(72px, 11vh, 122px); left: var(--track-inset);
+   	font-family:"Tactic", "Helvetica Neue", sans-serif;
+   	font-size: 11px; letter-spacing: .24em; text-transform: uppercase;
+   	color: var(--stamp-deep);
+   }
+   .track-head{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+   	font-variation-settings:"opsz" 144,"SOFT" 40;
+   	font-size: clamp(26px, min(4.2vw, 6.6vh), 62px);
+   	line-height: .95; letter-spacing: -.03em;
+   	margin: 0; max-width: 18ch;
+   }
+   .track-head em{
+   	font-style: italic; font-weight: 300;
+   	font-variation-settings:"opsz" 144,"WONK" 1;
+   }
+/* The short line that turns the section — held apart by scale, not a rule. */
+   .track-turn{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 300;
+   	font-variation-settings:"opsz" 60,"WONK" 1;
+   	font-size: clamp(17px, min(1.5vw, 2.6vh), 25px);
+   	line-height: 1.25; letter-spacing: -.012em;
+   	color: var(--sky-ink);
+   	margin: clamp(16px, 2.4vh, 30px) 0 0; max-width: 30ch;
+   }
+/* The rail's one direction cue, on the first panel only. Solid arrowhead via
+   clip-path — the same shape `.card-cta .arrow` uses, never a chevron glyph and
+   never a border. */
+   .track-hint{
+   	display: flex; align-items: center; gap: 10px;
+   	font-family:"Tactic", "Helvetica Neue", sans-serif;
+   	font-size: 11px; letter-spacing: .24em; text-transform: uppercase;
+   	color: var(--ink-soft);
+   	margin: clamp(20px, 3.2vh, 44px) 0 0;
+   }
+   .track-hint .arrow{
+   	width: 16px; height: 11px; background: var(--ink);
+   	clip-path: polygon(0 0, 100% 50%, 0 100%);
+   }
+   .track-text{
+   	display: grid; gap: clamp(14px, 2.2vh, 24px);
+   	max-width: 64ch;
+   }
+   .track-text p{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+   	font-variation-settings:"opsz" 24;
+   	font-size: clamp(15px, min(1.15vw, 2.05vh), 20px);
+   	line-height: 1.5; margin: 0; color: var(--ink-soft);
+   }
+
+/* ── the image panel ──
+   The image bleeds to the panel's right edge and carries no mat, keyline or
+   inset — a mat would read as exactly the frame this site does not allow. What it
+   does NOT do is put its caption on top of itself.
+   THE CAPTION AND CREDIT SIT IN THE SUBJECT FIELD, BELOW THE IMAGE, IN INK, and
+   that is a contrast decision rather than a taste one. They were first set in
+   white over gradient scrims, in the manner of `.hero-bg::after`; the project's
+   one photograph is a very PALE archival collage, so white on a .58 scrim over
+   it measured close to 2:1 — unreadable at caption size and hopeless at the
+   10.5px credit. A scrim strong enough to fix that would have buried the image.
+   Ink on --subject-bg clears 12:1 and cannot be broken by swapping the picture,
+   which is the property that matters when the client supplies their own.
+   The panel's top padding clears the band the numeral is parked in, so the
+   numeral also stays on the flat colour and keeps --stamp-deep. */
+   .track-panel--image{
+   	padding: clamp(104px, 14.5vh, 160px) 0 clamp(52px, 7vh, 84px) 0;
+   	justify-content: stretch;
+   }
+   .track-figure{
+   	display: grid; grid-template-rows: minmax(0, 1fr) auto;
+   	gap: clamp(12px, 1.8vh, 20px);
+   	margin: 0; height: 100%; min-height: 0;
+   }
+   .track-figure img{
+   	display: block; width: 100%; height: 100%; min-height: 0;
+   	object-fit: cover; object-position: center 40%;
+   	filter: saturate(.72) contrast(.96) brightness(1.03);
+   }
+   .track-figure figcaption{
+   	display: grid; gap: 5px;
+   	padding: 0 var(--page-x) 0 var(--track-inset);
+   }
+   .track-caption{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 340;
+   	font-size: clamp(14px, min(1.05vw, 1.9vh), 18px); line-height: 1.4;
+   	color: var(--ink); max-width: 46ch;
+   }
+   .track-credit{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif;
+   	font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase;
+   	color: var(--ink-soft); opacity: .72;
+   }
+
+/* Below the pin breakpoint the rail cannot work — nothing holds it, and snapping
+   is off at these widths anyway — so it unrolls into a plain vertical stack and
+   the motion hook skips the tween entirely (one gsap.matchMedia branch each).
+   `!important` for the same reason `.book`'s branch needs it: these declarations
+   collide with the `.panels > section.<name>` entries in the sticky selector
+   list, which is LATER in this file, and source order would otherwise win. */
+@media (max-width: 1100px){
+	.subject-track{ overflow: visible !important }
+	.track-stage{
+		position: static !important; height: auto !important;
+		grid-template-columns: 1fr;
+		gap: clamp(36px, 7vw, 64px);
+		padding: 0 var(--page-x);
+	}
+	.track-cover{ padding-top: 0 }
+	.track-cover .subject-title{ font-size: clamp(30px, 7vw, 96px) }
+	.track-cover .subject-lede{ font-size: clamp(17px, 1.5vw, 21px); max-width: 46ch }
+	.track-viewport{ height: auto; overflow: visible }
+	.track-rail{ display: grid; gap: clamp(40px, 8vw, 72px); height: auto }
+	.track-panel{ height: auto; display: grid; gap: 0 }
+	.track-panel{ --track-inset: 0px }
+	.track-panel--statement,
+	.track-panel--method,
+	.track-panel--text{ padding: 0 }
+	.track-figure figcaption{ padding: 0 }
+	/* The numeral has no constant viewport to park against once the panels are in
+	   normal flow, so it rejoins the content. */
+	.track-ord{ position: static; margin-bottom: 10px }
+	.track-text{ max-width: 46ch }
+	.track-figure{ height: auto }
+	.track-figure img{ height: auto; aspect-ratio: 4 / 3 }
+	.track-panel--image .track-ord{ color: var(--stamp-deep) }
+}
+
+/* Formats standfirst — who the subject is actually offered to. */
+.formats-lede{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+	font-variation-settings:"opsz" 24;
+	font-size: 16px; line-height: 1.5; letter-spacing:-.002em;
+	margin: 16px 0 0; max-width: 64ch; color: var(--ink-soft);
+}
+
+/* ─── APPROACH ─── */
+.approach{
+	padding: 0 var(--page-x);
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+.approach-rail{
+	display:grid; grid-template-columns: minmax(180px, 220px) 1fr;
+	gap: 48px;
+	align-items:start;
+	padding-top: 36px;
+}
+.approach-rail .label{ display:grid; gap:6px }
+.approach-rail .label b{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:400; font-size:18px;
+	font-variation-settings:"opsz" 14,"WONK" 1;
+}
+.approach-body{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:340;
+	font-variation-settings:"opsz" 60,"SOFT" 50;
+	font-size: clamp(24px, 3.6vw, 54px);
+	line-height: 1.12;
+	letter-spacing:-.018em;
+	max-width: 22ch;
+}
+.approach-body em{
+	font-style:italic; color:var(--sky-deep);
+	font-variation-settings:"opsz" 60,"SOFT" 60,"WONK" 1;
+	font-weight:300;
+}
+.approach-footnote{
+	font-size: 13.5px; line-height:1.55;
+	max-width: 38ch; margin: 40px 0 0 auto;
+	padding-top: 14px;
+}
+
+/* ─── SUB-UMBRELLA COVER (A Colonial Present — the subject under Revisit History) ───
+   These recipes are the cover's TYPE only. The cover no longer has a panel of
+   its own: it is the standing left column of `.subject-track`, which re-clamps
+   the sizes below for a column less than half a viewport wide. The `.subjects` /
+   `.subjects-inner` layout rules went with the panel. */
+.subject-title{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+	font-variation-settings:"opsz" 144,"SOFT" 40;
+	font-size: clamp(30px, min(7vw, 8.4vh), 96px);
+	line-height: .94; letter-spacing: -.025em;
+	margin: clamp(6px,1.2vh,12px) 0 clamp(12px,2.4vh,22px); text-wrap: balance;
+}
+.subject-title em{
+	font-style: italic; color: var(--sky-deep); font-weight: 300;
+	font-variation-settings:"opsz" 144,"WONK" 1;
+}
+.subject-lede{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 340;
+	font-variation-settings:"opsz" 24;
+	font-size: clamp(17px, 1.5vw, 21px);
+	line-height: 1.5; letter-spacing: -.005em;
+	max-width: 46ch; margin: 0;
+}
+.subject-lede em{ font-style: italic; color: var(--sky-deep); font-weight: 300; }
+/* Programme method note, folded into the sub-umbrella cover */
+.subject-method{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 340;
+	font-variation-settings:"opsz" 24;
+	font-size: clamp(14px, 1.1vw, 16px);
+	line-height: 1.6; letter-spacing: -.003em;
+	max-width: 52ch; margin: 22px 0 0; color: var(--ink-soft);
+}
+.subject-method em{ font-style: italic; color: var(--sky-deep); font-weight: 300; }
+.subject-guides{
+	margin: 26px 0 0; padding-top: 0;
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 340;
+	font-size: 13px; line-height: 1.5; color: var(--ink-soft); max-width: 36ch;
+}
+.subject-index{ align-self: center; }
+.index-cap{ margin-bottom: 12px; }
+.index-list{
+	list-style: none; margin: 0; padding: 0;
+}
+/* No rules and no tint block — the stamp-red numeral and the "on view now"
+   state label carry the row on their own, flat on the section colour. */
+   .index-list li{
+   	display: grid; grid-template-columns: auto 1fr auto;
+   	gap: 16px; align-items: baseline;
+   	padding: 16px 0;
+   }
+   .index-list .idx-n{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 300;
+   	font-variation-settings:"opsz" 14,"WONK" 1;
+   	font-size: 16px; color: var(--stamp); font-variant-numeric: tabular-nums;
+   }
+   .index-list .idx-name{
+   	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 500;
+   	font-size: 19px; letter-spacing: -.01em;
+   }
+   .index-list .idx-state{
+   	font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+   	white-space: nowrap; color: var(--stamp);
+   }
+   .index-note{
+   	margin: 16px 0 0; font-size: 13px; line-height: 1.55;
+   	color: var(--ink-soft); max-width: 34ch;
+   }
+   @media (max-width: 1100px){
+   	.subject-index{ align-self: start; }
+   }
+
+/* ─── SUBJECT CONTAINMENT ────────────────────────────────────────────────────
+   The whole "A Colonial Present" run — cover + Formats + Route + Book — is one
+   flat, edge-to-edge field of --subject-bg. About + Contact are flat white. The
+   umbrella is felt as a change of *territory*: you enter a colour and stay in it
+   for four panels, then leave it.
+
+   There is NO card, sheet, board, mat, keyline or inset panel. An earlier version
+   floated a cream sheet inside a tan board; the user read that as a frame and
+   rejected it. Do not reintroduce a container — if the subject stops reading as
+   one place, change --subject-bg, don't box the content.
+
+   .subject-wrap is a bare max-width wrapper: no background, no padding, no
+   shadow. It exists only to hold content to --max and centre it. */
+   .subject-wrap{
+   	position: relative; z-index: 1;
+   	width: 100%; max-width: var(--max);
+   	margin-inline: auto;
+   }
+
+/* ─── FORMATS ─── three fields: a standing statement, then one territory per
+   format. REBUILT 2026-09-03; the site owner on the previous version: "I don't
+   like the presentation at all."
+
+   WHAT WAS WRONG, since the fix only makes sense against it. Two `.card`
+   columns floated in a large empty ground with nothing holding them; the `.ord`
+   roman numeral was display type at up to 108px while the format's own NAME was
+   20px uppercase, so the numeral carried the hierarchy and the title whispered;
+   the four chips were a cramped tracked row reading as noise; and the two bodies
+   are very different lengths, so the columns ended ragged and the two CTAs never
+   lined up. Above all, nothing let you COMPARE two offers that vary along
+   exactly four axes.
+
+   WHAT IT IS NOW. The panel borrows the grammar the subject track above it
+   established — thin standing statement on the left, content in wide fields on
+   the right:
+
+       [ statement 26% ][ format I 1fr ][ format II 1fr ]
+
+   Each format owns a full-height field with its own ground, and the four chips
+   became a keyed spec list whose rows sit on shared baselines. The comparison IS
+   the presentation.
+
+   STILL NO CARD, MAT, KEYLINE OR INSET. The fields bleed to the panel's top and
+   bottom edges and meet at a hard seam, so they read as a change of place rather
+   than as boxes on a board — the same reasoning that lets the subject track give
+   its rail a ground of its own. The tonal ramp runs left to right, lightening:
+   --subject-bg #d7cdb4 (statement) -> --paper #e9e3d4 (I) -> --paper-warm
+   #efe8d6 (II). EVERY step clears contrast for everything the panel uses:
+   --sky-ink 4.86 / 6.00 / 6.28, --stamp-deep 5.18 / 6.40 / 6.70, --ink 11.70 /
+   14.45 / 15.14. Extend the ramp LIGHTER, never darker — a deeper tan (#c9bd9f)
+   puts --sky-ink at 4.12 and --stamp-deep at 4.39 and both fail.
+
+   The dead `.formats::before` archive-photo rule is GONE (it never rendered:
+   `.panels > section:not(.hero)::before` at 0,2,2 outranked it at 0,1,1). The
+   photograph now has a real home on the subject track's rail panel III, with the
+   Ramael credit it is owed. `.formats > *{ z-index: 1 }` went with it — it only
+   existed to sit above that pseudo-element. */
+.formats{
+	color: var(--ink);
+	padding: 0;
+	display: grid;
+	grid-template-columns: minmax(0, 29%) minmax(0, 1fr) minmax(0, 1fr);
+	align-items: stretch;
+}
+/* All three columns share their insets, as variables, so they cannot drift apart.
+   All three start on ONE LINE, from a deep top inset, rather than each being
+   centred in its own column. Centred, the statement's shorter block floated ~65px
+   below the format titles and nothing in the panel shared a baseline; started
+   together, the eyebrow sits level with the two numerals and the head with the two
+   titles, which is what makes three columns read as one grid. The inset is deep
+   enough that the band lands around a third of the way down instead of hugging
+   the bar. */
+.formats{
+	--field-top: clamp(112px, 26vh, 260px);
+	--field-bottom: clamp(26px, 4vh, 54px);
+}
+.formats-statement{
+	min-width: 0;
+	display: flex; flex-direction: column; justify-content: flex-start;
+	padding: var(--field-top) clamp(18px, 1.8vw, 32px) var(--field-bottom) var(--page-x);
+}
+/* The breadcrumb is long enough to wrap in a column this narrow, so it needs its
+   own leading rather than sitting on the display type's tight line-height. */
+.formats-statement .eyebrow{ line-height: 1.5; margin-bottom: clamp(4px,.8vh,10px) }
+/* DEMOTED ON PURPOSE, from clamp(30px, min(6vw, 6.6vh), 96px). On a panel whose
+   job is to present two offers, the offers' names are what should shout, and the
+   house rule is one shout per surface. This is still the panel's statement and
+   still display type — just no longer the loudest thing on it. Clamped on BOTH
+   axes, like every heading in a pinned panel. */
+.formats-statement h2{
+	margin: clamp(4px,.9vh,10px) 0 0;
+	font-family:"Tactic", "Helvetica Neue", sans-serif;
+	font-size: clamp(19px, min(1.95vw, 3.35vh), 31px);
+	font-weight: 330;
+	font-variation-settings:"opsz" 144,"SOFT" 40;
+	letter-spacing: -.02em;
+	line-height: 1.08;
+}
+.formats-statement h2 em{
+	font-style: italic; font-weight: 300; color: var(--sky-ink);
+	font-variation-settings:"opsz" 144,"WONK" 1;
+}
+
+/* ── one format's field ──
+   Content starts at the shared `--field-top` line, and the two CTAs are aligned
+   by giving the BODY a floor
+   rather than by pushing them apart. The first pass at this rebuild used
+   `grid-template-rows: auto auto auto 1fr auto` to shove each CTA to the bottom
+   of its field, which failed twice over: it opened a ~400px void between body and
+   CTA in a 900px panel, and it dropped the CTA so low that its reveal never ran —
+   `.gsap-fade`'s generic trigger is `start: 'top 85%'`, and an element parked at
+   846px in a pinned 900px panel never rises above 765px, so the tween sat at
+   `opacity: 0` forever and both call-to-actions were simply invisible. Anything
+   placed near the bottom of a pinned panel has that problem; keep content inside
+   the upper two-thirds or give it a trigger of its own. */
+.format-field{
+	min-width: 0;
+	display: flex; flex-direction: column; justify-content: flex-start;
+	padding: var(--field-top) clamp(20px, 2.2vw, 44px) var(--field-bottom);
+}
+.format-field--1{ background: var(--paper); }
+.format-field--2{
+	background: var(--paper-warm);
+	padding-right: var(--page-x);
+}
+/* A small archival mark, as on the subject track's rail — not the 108px numeral
+   that used to outshout the title. --stamp-deep rather than --stamp: it clears
+   4.5:1 on all three grounds of the ramp, and --stamp does not on --subject-bg. */
+.format-ord{
+	font-family:"Tactic", "Helvetica Neue", sans-serif;
+	font-size: 11px; letter-spacing: .24em; text-transform: uppercase;
+	color: var(--stamp-deep);
+}
+/* THE LOUD THING ON THE PANEL, which is the point of the rebuild. `min-height`
+   is two lines' worth so both titles occupy the same block and the two spec
+   lists below them start on one baseline — the comparison depends on that. */
+.format-title{
+	margin: clamp(6px,1.1vh,14px) 0 0;
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+	font-variation-settings:"opsz" 144,"SOFT" 40;
+	font-size: clamp(21px, min(2.45vw, 4.1vh), 40px);
+	line-height: 1.02; letter-spacing: -.025em;
+	min-height: 2.04em;
+	text-wrap: balance;
+}
+.format-title em{
+	font-style: italic; font-weight: 300; color: var(--sky-ink);
+	font-variation-settings:"opsz" 144,"WONK" 1;
+}
+/* The chip row, keyed. Four rows in a fixed order, so the same question is asked
+   of both formats and the answers line up across the seam. No rules and no tint
+   between rows: the tracked key column carries the rhythm on its own, which is
+   the lesson the old `.chip` tint pill taught (1.11:1 — a box you can sense but
+   not see). */
+.format-specs{
+	margin: clamp(10px,1.9vh,22px) 0 0;
+	display: grid; gap: clamp(5px,.95vh,10px);
+}
+.format-spec{
+	display: grid;
+	grid-template-columns: minmax(64px, 26%) 1fr;
+	gap: 14px; align-items: baseline;
+}
+.format-spec dt{
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 500;
+	font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+	color: var(--ink-soft); opacity: .72;
+}
+.format-spec dd{
+	margin: 0;
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 400;
+	font-size: clamp(13px, min(1vw, 1.8vh), 16px); line-height: 1.3;
+	letter-spacing: -.004em;
+}
+.format-body{
+	align-self: start;
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 340;
+	font-variation-settings:"opsz" 24;
+	font-size: clamp(13.5px, min(1.02vw, 1.85vh), 16.5px);
+	line-height: 1.45; letter-spacing: -.003em;
+	margin: clamp(12px,2.1vh,26px) 0 0; max-width: 44ch;
+	color: var(--ink-soft);
+  /* Five lines' worth, which is what the longer of the two bodies runs to. It is
+	 the floor that keeps the two CTAs on one line now that nothing pushes them
+	 down, and it costs the shorter body some empty leading rather than costing the
+	 panel a void. */
+	min-height: 7.25em;
+}
+.card-cta{
+	display: inline-flex; align-items: center; gap: 14px;
+	margin: clamp(14px, 2.4vh, 30px) 0 0;
+	font-size: 12px; letter-spacing: .22em; text-transform: uppercase; font-weight: 500;
+	width: fit-content; align-self: start;
+}
+/* Solid arrowhead in place of the old rule-plus-chevron; hover slides it. */
+.card-cta .arrow{
+	width: 16px; height: 11px; background: var(--ink);
+	clip-path: polygon(0 0, 100% 50%, 0 100%);
+	transition: transform var(--t-fast);
+}
+.card-cta:hover .arrow{ transform: translateX(7px) }
+
+/* ─── ROUTE map panel ─── */
+.route{
+	padding: 0 var(--page-x);
+	position: relative;
+	overflow: hidden;
+  /* .route-inner holds the content to exactly one viewport; the rest of the
+	 panel's 220vh is scroll room for the map draw-on before Book pins over. */
+	}
+	.route-inner{
+		display: grid;
+		grid-template-columns: minmax(240px, 300px) 1fr;
+		gap: 48px;
+		align-items: center;
+		justify-content: center;
+		height: 100vh;
+	}
+	.route::before{
+  /* DEAD RULE — same cascade collision as .formats::before above; the paper grain
+	 never paints. Harmless, and it means Route is genuinely the same flat colour
+	 as the other three subject panels. */
+	 content: ""; position: absolute; inset: 0; pointer-events: none;
+	 background-image:
+	 radial-gradient(rgba(22,19,17,.06) 1px, transparent 1.2px),
+	 radial-gradient(rgba(22,19,17,.04) 1px, transparent 1.2px);
+	 background-size: 3px 3px, 7px 7px;
+	 background-position: 0 0, 1px 2px;
+	 mix-blend-mode: multiply;
+	 opacity: .8;
+	}
+	.route-text{
+		position: relative; z-index: 2;
+		max-width: 36ch;
+	}
+	.route-text .eyebrow{ margin-bottom: 14px }
+	.route-text h2{
+		font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 330;
+		font-variation-settings:"opsz" 144,"SOFT" 40;
+		font-size: clamp(28px, min(4.4vw, 7vh), 72px);
+		line-height: .96; letter-spacing:-.02em;
+		margin: 0 0 clamp(10px,1.8vh,18px);
+	}
+	.route-text h2 em{
+		font-style: italic; color: var(--sky-deep);
+		font-variation-settings:"opsz" 144,"WONK" 1; font-weight: 300;
+	}
+	.route-text p{
+		font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight: 340;
+		font-variation-settings:"opsz" 24;
+		font-size: 16px; line-height: 1.5;
+		margin: 0 0 22px; letter-spacing:-.003em;
+	}
+	.route-text .legend{
+		list-style: none; margin: 0; padding: 0;
+		font-size: 12px; letter-spacing: .04em;
+	}
+/* Keylines removed; the stamp-red numeral column does the separating. Padding is
+   unchanged on purpose — Route/Book are height-critical (see CLAUDE.md). */
+   .route-text .legend li{
+   	display: grid; grid-template-columns: 32px 1fr auto;
+   	gap: 12px; align-items: center;
+   	padding: 10px 0;
+   }
+   .route-text .legend .num{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 300;
+   	font-variation-settings:"opsz" 14,"WONK" 1;
+   	font-size: 18px; color: var(--stamp);
+   	text-align: center;
+   }
+   .route-text .legend .km{ opacity: .6; font-variant-numeric: tabular-nums }
+
+   .route-map{
+   	position: relative; z-index: 1;
+   	width: 100%;
+   	aspect-ratio: 4 / 3;
+   	max-height: 56vh;
+   	height: 56vh;
+   	justify-self: stretch;
+   	background:
+   	/* faux topographic contour rings */
+   	radial-gradient(circle at 30% 35%, rgba(22,19,17,.05) 0 1px, transparent 1px) 0 0/24px 24px,
+   	radial-gradient(circle at 70% 65%, rgba(22,19,17,.04) 0 1px, transparent 1px) 0 0/36px 36px,
+   	/* very faded blue river hint */
+   	linear-gradient( 110deg, transparent 0 38%, rgba(110,138,154,.18) 38% 42%, transparent 42% 100%),
+	/* Aged paper gradient, kept LIGHTER than --subject-bg so the map separates
+	   itself from the flat section colour by tone alone — it has no frame and no
+	   shadow. Don't darken this toward the section colour. */
+	   linear-gradient(160deg, #f2eacc 0%, #e9dcb4 60%, #ded0a2 100%);
+	   overflow: hidden;
+	}
+/* compass + scale frills */
+.route-map .compass{
+	position: absolute; top: 16px; right: 16px;
+	width: 56px; height: 56px;
+	border-radius: 50%;
+	display: grid; place-items: center;
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: .2em; font-weight: 500;
+	/* Tinted disc, no ring. */
+	background: rgba(250,244,226,.72);
+}
+/* Needle as a solid north-pointing wedge rather than a 1px rule. */
+.route-map .compass::before{
+	content: ""; position: absolute; left: 50%; top: 7px;
+	width: 7px; height: 20px; margin-left: -3.5px;
+	background: var(--stamp);
+	clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.route-map .scale{
+	position: absolute; bottom: 14px; left: 16px;
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+	display: flex; align-items: center; gap: 8px;
+}
+.route-map .scale .bar-s{
+	display: inline-block; height: 4px; width: 80px;
+	background: repeating-linear-gradient(to right, var(--ink) 0 20px, transparent 20px 40px);
+}
+.route-map svg{
+	position: absolute; inset: 0; width: 100%; height: 100%;
+	display: block;
+}
+.route-map .pin{
+	position: absolute;
+	transform: translate(-50%, -100%);
+	display: grid; place-items: center;
+	filter: drop-shadow(1px 2px 0 rgba(22,19,17,.18));
+}
+.route-map .pin .dot{
+	width: 18px; height: 18px;
+	border-radius: 50%;
+	/* Was a paper disc with a stamp ring — inverted to a solid stamp disc. */
+	background: var(--stamp);
+	display: grid; place-items: center;
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style: italic; font-weight: 400;
+	font-variation-settings:"opsz" 14,"WONK" 1;
+	font-size: 11px; color: var(--paper); line-height: 1;
+}
+.route-map .pin .tag{
+	margin-top: 6px;
+	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  /* Was paper-on-map held apart by a 1px ink border. With the border gone and the
+	 map lightened, paper-on-map is 1.07:1 — invisible. Inverted to an ink chip. */
+	 background: var(--ink);
+	 color: var(--paper);
+	 padding: 4px 7px;
+	 white-space: nowrap;
+	}
+	@media (max-width: 1100px){
+  /* Route stays PINNED at this breakpoint (unlike the other text-dense panels) so
+	 the scrubbed map draw-on keeps working — which means the stacked layout has to
+	 fit inside a hard 100vh with overflow:hidden. A fixed-aspect map + 80px of
+	 padding overflowed it by ~190px. Instead: text takes its natural row, the map
+	 takes whatever is left (minmax(0,1fr) + min-height:0 lets it shrink), so it
+	 can never push past the pin at any viewport height. */
+	 .route{ padding-top: 0; }
+	 .route-inner{
+	 	grid-template-columns: 1fr;
+	 	grid-template-rows: auto minmax(0, 1fr);
+	 	gap: 20px;
+	 	align-content: center;
+	 	padding-block: 40px;
+	 }
+	 .route-map{ aspect-ratio: auto; height: 100%; max-height: none; min-height: 0 }
+	}
+
+/* ─── BOOK ─── */
+/* Vertical padding is real here (it was 0 + centring): the booking widget now
+   stretches to the panel, so the panel has to reserve room for the top bar above
+   it and the language toggle below it. vh-clamped like every other pinned panel. */
+   .book{
+  /* Tighter than the other panels on purpose. Book is the only height-starved
+	 one — the SimplyBook widget asks for ~1094px and a pinned 100vh panel cannot
+	 give it that — so every vertical pixel spent on padding here is a pixel the
+	 reader has to scroll for inside the frame. Trimmed 2026-09-01 (was 12.5vh /
+	 7vh), which hands the widget ~64px back at 900px tall. */
+   	padding: clamp(64px, 8.5vh, 96px) var(--page-x) clamp(28px, 4vh, 48px);
+   	display:flex;
+   	align-items:stretch;
+   	justify-content:center;
+   }
+   .book .subject-wrap{
+   	display:grid;
+  	/* The notes column tracks the page rather than sitting at a fixed 330px: at
+	   1760px the widget already takes 1fr, and a fixed narrow column beside it
+	   reads as a 1:4 sliver. */
+	   grid-template-columns: minmax(240px, clamp(300px, 23vw, 440px)) 1fr;
+   	gap: clamp(28px, 3.4vw, 64px);
+   	align-items:stretch;
+  /* One row, and it may not exceed the wrapper. A plain `auto` row is sized by
+	 its tallest item's max-content — which in the widget column means the
+	 iframe's own 1094px height attribute — so the row grows past the panel and
+	 every height below it resolves against the wrong box. */
+   	grid-template-rows: minmax(0, 1fr);
+  /* Book only. .book is a flex container and this is its single item, so its
+	 automatic minimum size is its CONTENT size — the widget's 1094px attribute
+	 height — which makes the item grow straight past the panel's 788px content
+	 box no matter what the children do. Without this the height:100% chain below
+	 resolves against a box that is already too tall and the clamp does nothing.
+	 min-height:0 all the way down is what actually binds the widget to the pane. */
+   	min-height: 0;
+   }
+/* The notes column is short; only the widget wants the full height. */
+.book-head{ align-self:center; min-width:0 }
+.book-head h2{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:330;
+	font-variation-settings:"opsz" 144,"SOFT" 40;
+	font-size: clamp(30px, min(5vw, 8vh), 84px);
+	line-height:.96; letter-spacing:-.02em;
+	margin: clamp(6px,1.2vh,12px) 0 clamp(16px,3vh,32px);
+}
+.book-head h2 em{
+	font-style:italic; color:var(--sky-deep);
+	font-variation-settings:"opsz" 144,"WONK" 1; font-weight:300;
+}
+.notes{
+	list-style:none; padding:0; margin:0;
+	display:grid; gap:0;
+}
+/* Keylines removed; the italic stamp-red numeral column carries the rhythm.
+   Padding held at 14px — Book is the tightest panel on the page. */
+   .notes li{
+   	display:grid; grid-template-columns: 28px 1fr;
+   	align-items:start; gap:14px;
+   	padding: 14px 0;
+   	font-size:14px; line-height:1.45;
+   }
+   .notes li .n{
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-style:italic; font-weight:300;
+   	font-variation-settings:"opsz" 14,"WONK" 1;
+   	font-size: 18px; color:var(--stamp); line-height:1.2;
+   }
+
+/* Book is a pinned 100vh panel, so the widget is sized BY the panel, never by
+   itself: the embed fills the whole right-hand column, width and height. It used
+   to be a 4:5 box capped at 53vh wide, which left ~800px of empty subject field
+   beside it and squeezed SimplyBook into its narrow one-column fallback; at full
+   width the widget lays its services out side by side and the panel reads as one
+   composition instead of a postcard pinned to a wall.
+   No sheet, no fill, no edge: SimplyBook's own body is themed to --subject-bg in
+   the widget config below the fold, so the form sits directly on the subject's
+   colour field and the widget's unused height is invisible rather than a pale box.
+   height:100% is load-bearing and has TWO fallbacks that must move together: both
+   the mobile branch and the reduced-motion branch unpin .book to height:auto, at
+   which point height:100% resolves to auto and this frame — whose only child is
+   absolutely positioned — collapses to zero. Both give it a flat clamped height
+   back. Don't use aspect-ratio for that: the frame is full column width, and 4/5
+   of 1366px is a 1708px tower. */
+/* THE WIDGET IS CLAMPED TO THE PANE, AND THIS IS WHAT STOPS IT BEING CUT OFF.
+   widget.js sizes its own iframe by postMessage (`expandHeight`) to whatever its
+   content needs — 1094px for the month calendar, more on a narrower column — and
+   it writes that as an HTML `height` ATTRIBUTE, not inline CSS. In a pinned
+   `overflow:hidden` panel that meant 359px of the form, "Available start times"
+   included, was simply clipped away at 1440x900 with nothing to say so.
+
+   `height:100%!important` beats the attribute (and beats it again on every
+   expandHeight message, which is why it cannot be a plain declaration), and
+   `overflow:hidden` on the wrapper keeps the frame inside the pane. The widget's
+   own document then scrolls, which is fine: a wheel over a cross-origin iframe
+   never reaches Lenis, so there is nothing to fight.
+
+   Note the selector is `.book-embed iframe`, NOT `.embed-frame iframe`. There is
+   no .embed-frame wrapper in this port — the widget injects its iframe straight
+   into .book-embed — so the older rule never matched. */
+   .book-embed{ display:grid; grid-template-rows: 1fr; width:100%; min-width:0; min-height:0 }
+   .book-embed iframe{ width:100%; border:0 }
+
+/* Where a pinned panel caps the height, the frame takes the pane. The mobile
+   branch clamps it to a flat length instead — see the note there. Either way the
+   booking area is a FIXED box and the widget scrolls inside it; what must never
+   happen is the frame sizing itself, because widget.js rewrites that height on
+   every step of the form and the whole document shifts under the reader.
+   The base rule sets no height at all: `height:auto` would not hand the widget's
+   own `height` ATTRIBUTE back — an attribute is a presentational hint that any
+   author declaration beats — it would collapse the iframe to the
+   replaced-element default of 150px, measured at 1024x768 and 390x780. */
+   @media (min-width: 1101px){
+   	.book-embed{ height:100%; overflow:hidden }
+   	.book-embed iframe{ height:100% !important; max-height:100% }
+   }
+   .embed-frame{
+   	position:relative;
+   	height:100%;
+   	overflow:hidden;
+   }
+   .embed-frame iframe{
+   	position:absolute; inset:0; width:100%; height:100%; border:0;
+   	background: transparent;
+   }
+
+/* ─── BOOK · the two paths ─────────────────────────────────────────────────────
+   Individual keeps the SimplyBook widget; Groups & schools is an enquiry form,
+   because service 2 has no bookable slot and its date is negotiated by a person.
+
+   The row grid is `auto 1fr` with min-height:0 all the way down, and the form
+   scrolls INSIDE its pane. That is not tidiness: Book is a pinned 100vh panel
+   with overflow:hidden, so at a 618px viewport six fields and a submit button
+   are simply cut off the bottom of the document with nothing to say so — the
+   same silent clipping the widget already suffers at that height. */
+   .book-paths{
+   	display:grid; grid-template-rows: auto minmax(0, 1fr);
+   	gap: clamp(14px, 2vh, 26px);
+  /* Height comes from the stretch of the grid row above — NOT from a length.
+	 This said `100vh`, which is the SECTION's height, not the wrapper's: it made
+	 .book-paths 900px tall inside a 788px content box, so the pane below it was
+	 112px too tall and the widget hung past the panel however hard the iframe
+	 itself was clamped. Anything absolute here reintroduces that. */
+   	min-height:0; min-width:0;
+   }
+
+/* A tab pair. The selected one is a solid block, the house affordance (see
+   .menu-btn) — the fill IS the state, there is no underline or frame. A tint
+   would not carry here: the .chip lesson was that rgba(ink,.055) on --subject-bg
+   measures 1.11:1, a box you can sense but not see. */
+   .book-switch{ display:flex; flex-wrap:wrap; gap: 8px }
+   .book-switch button{
+   	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+   	font-size:12px; letter-spacing:.2em; text-transform:uppercase;
+   	padding: 10px 17px; background: none; color: var(--ink-soft);
+   	cursor:pointer;
+   	transition: background var(--t-fast), color var(--t-fast);
+   }
+   .book-switch button:hover{ color: var(--stamp-deep) }
+   .book-switch button.is-on{ background: var(--ink); color: var(--paper) }
+   .book-switch button.is-on:hover{ background: var(--stamp-deep); color: var(--paper) }
+
+   .book-pane{ display:grid; grid-template-rows:1fr; min-height:0; min-width:0 }
+/* Explicit, because the rule above sets display and would beat the UA sheet's
+   [hidden] rule. Both panes stay in the document — the widget must never
+   unmount. */
+   .book-pane[hidden]{ display:none }
+
+/* ─── The group enquiry form ─── */
+   .enquiry{
+   	display:flex; flex-direction:column; gap: clamp(12px, 2vh, 22px);
+   	min-height:0; overflow-y:auto; overscroll-behavior: contain; padding-right: 8px;
+   }
+   .enquiry-lede{
+   	margin:0; max-width: 60ch;
+   	font-size: clamp(14px, 1.05vw, 17px); line-height:1.5; color: var(--ink-soft);
+   }
+   .enquiry-grid{
+   	display:grid; grid-template-columns: repeat(2, minmax(0,1fr));
+   	gap: clamp(10px, 1.6vh, 18px) clamp(16px, 1.6vw, 30px);
+   }
+   .enquiry-field{ position:relative; margin:0; display:grid; gap:6px; min-width:0 }
+   .enquiry-field.is-wide{ grid-column: 1 / -1 }
+   .enquiry-field label{
+   	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+   	font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color: var(--ink-soft);
+   }
+   .enquiry-field .opt{ letter-spacing:.14em; opacity:.6 }
+
+/* White is the fill that stands in for the missing outline — paper on the
+   subject's tan ground, the same tone step the white About/Contact panels make
+   against it. `border:0` here joins the three existing resets; inputs are not
+   covered by the button/iframe ones and would otherwise ship a UA outline. */
+   .enquiry-field input,
+   .enquiry-field select,
+   .enquiry-field textarea{
+   	font: inherit; font-size: clamp(14px, 1vw, 16px); line-height:1.4;
+   	color: var(--ink); background: #ffffff;
+   	padding: 11px 13px; width:100%; min-width:0;
+   	border:0; border-radius:0; appearance:none;
+   	transition: box-shadow var(--t-fast);
+   }
+   .enquiry-field textarea{ resize:vertical; min-height: 76px }
+
+/* Focus has to be visible (WCAG 2.4.7) and colour alone will not do it. Drawn as
+   a filled bar sitting inside the field rather than as an outline around it —
+   the same substitution the arrowheads make for chevrons. */
+   .enquiry-field input:focus-visible,
+   .enquiry-field select:focus-visible,
+   .enquiry-field textarea:focus-visible{
+   	outline: 0;
+   	box-shadow: inset 0 -4px 0 0 var(--stamp-deep);
+   }
+
+/* Caret for the select, as a solid triangle. clip-path, not a glyph and not a
+   border trick. */
+   .enquiry-field:has(select)::after{
+   	content:""; position:absolute; right:14px; bottom:19px;
+   	width:11px; height:7px; background: var(--ink-soft);
+   	clip-path: polygon(0 0, 100% 0, 50% 100%);
+   	pointer-events:none;
+   }
+   .enquiry-field select{ padding-right: 34px }
+
+   .enquiry-foot{ display:flex; align-items:center; flex-wrap:wrap; gap: 16px; padding-top: 2px }
+   .enquiry-send{
+   	font-family:"Tactic", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight:500;
+   	font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+   	padding: 13px 24px; background: var(--ink); color: var(--paper);
+   	cursor:pointer; transition: background var(--t-fast);
+   }
+   .enquiry-send:hover{ background: var(--stamp-deep) }
+   .enquiry-send[disabled]{ opacity:.5; cursor:default }
+   .enquiry-send[disabled]:hover{ background: var(--ink) }
+   .enquiry-error{ font-size:13px; line-height:1.4; color: var(--stamp-deep) }
+
+/* The mailto fallback's notice. Deliberately NOT styled as a success: it sits
+   above the form the visitor still has to send from their mail client. */
+   .enquiry-handoff{
+   	margin:0; max-width: 60ch;
+   	font-size: clamp(14px, 1.05vw, 17px); line-height:1.45; color: var(--stamp-deep);
+   }
+
+/* The one thing this surface should shout, once it has something to say. */
+   .enquiry-done{ display:grid; align-content:center; min-height:0 }
+   .enquiry-done p{
+   	margin:0; max-width: 22ch;
+   	font-size: clamp(22px, min(2.6vw, 4.4vh), 40px);
+   	line-height:1.06; letter-spacing:-.02em;
+   }
+
+/* ─── CONTACT ─── */
+.contact{
+	padding: 0 var(--page-x);
+	display:grid;
+	grid-template-columns: 1fr auto;
+	align-items:center;
+	gap: 48px;
+}
+.contact h2{
+	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:330;
+	font-variation-settings:"opsz" 144,"SOFT" 30;
+	font-size: clamp(48px, 8vw, 128px);
+	/*line-height:.92; */
+	letter-spacing:-.025em;
+	margin:0; max-width: 14ch;
+}
+.contact h2 a{
+	font-style:italic; font-weight:300;
+	font-variation-settings:"opsz" 144,"WONK" 1;
+	color:var(--sky-deep);
+	transition: color var(--t-fast);
+}
+.contact h2 a .mail{
+	display:inline-block;
+	padding-bottom: .03em;
+}
+/* A 128px mail address is unmistakably a link; colour alone carries the hover. */
+.contact h2 a:hover{ color:var(--stamp) }
+.contact-meta{
+	display:grid; gap:8px; text-align:right;
+	font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:500;
+}
+.contact-meta span{ opacity:.65 }
+
+/* ─── FOOTER ─── just "back to top", nothing else. */
+footer{
+	padding: 30px var(--page-x);
+	display:flex;
+	justify-content:flex-end;
+	font-size: 12px;
+	letter-spacing:.18em;
+	text-transform: uppercase;
+}
+footer a{ position:relative; transition: color var(--t-fast) }
+footer a:hover{ color: var(--sky-deep) }
+
+/* cookie banner */
+.cookies{
+	position:fixed; 
+	right: 0px;
+	bottom: 0px; 
+	z-index:70;
+	max-width: min(440px, calc(100vw - 2*var(--page-x)));
+  /* The frame and the hard offset are gone, so the card can no longer be paper-on-
+	 paper — it would vanish over the hero. Inverted to a solid ink block instead:
+	 legible over --paper, --subject-bg and white alike, and it reads as bold rather
+	 than as a box. */
+	 background: var(--ink);
+	 color: var(--paper);
+  /* Slim single-line bar: sentence + inline OK, one baseline. Requested 2026-08-20 —
+	 this used to be a stacked display-type block; don't restore that. */
+	 padding: 15px 26px 16px;
+	 text-align:center;
+	 box-shadow: 0 14px 40px rgba(22,19,17,.24);
+	 transition: transform var(--t-fast), opacity var(--t-fast);
+	}
+	.cookies.hidden{ transform: translateY(12px); opacity:0; pointer-events:none }
+/* Deliberately NOT display type — utility copy, kept quiet (see the house-style note
+   in CLAUDE.md: the size is reserved for the one thing a surface should shout). */
+   .cookies .ck-msg{
+   	margin:0;
+   	font-family:"Tactic", "Helvetica Neue", sans-serif; font-weight:500;
+   	font-size: clamp(15px, 2.5vw, 26px);
+   	line-height: 1.3; letter-spacing: 0;
+   }
+/* The OK sits inside the sentence, so colour alone can't mark it as actionable
+   (WCAG 1.4.1) — same exception as .inline-link, but on ink, so the underline is
+   currentColor rather than that rule's paper-tuned tint. */
+   .cookies button{
+   	font: inherit; color: inherit;
+   	background: none; padding: 0;
+   	text-decoration: underline;
+   	text-decoration-thickness: 1px;
+   	text-underline-offset: .18em;
+   	transition: color var(--t-fast);
+   }
+   .cookies button:hover{ color: var(--ochre); }
+
+/* ─── GSAP word reveal ─────────────────────────────────────────────────────────
+   Each word is masked by overflow:hidden so it can slide up from behind its own
+   line. The mask box is the LINE box — and this site's display type runs at
+   line-height .94–1.0, well under the font's ink height — so ascenders,
+   descenders and italic overhang were being sliced off (41 words on the page:
+   the "g" in "moving", the "f"/"t" in the italic "historical fact", and so on).
+
+   Fix: grow the mask on all four sides, then cancel the growth with equal
+   negative margins, so the clip box is bigger but layout and word spacing are
+   completely unchanged. Do NOT remove the padding/margin pair — put them back
+   together or the clipping returns. */
+   .word{
+   	display:inline-block;
+   	overflow:hidden;
+   	vertical-align: top;
+   	line-height: inherit;
+   	padding: .24em .14em;
+   	margin: -.24em -.14em;
+   }
+   .word .w-inner{
+   	display:inline-block;
+  /* Must clear the ENLARGED mask (content height + .24em), not just the line box,
+	 or the word's top edge peeks out below before it animates in. The matching
+	 `y: "150%"` start value lives in the ScrollTrigger reveal in the script —
+	 keep the two in sync. */
+	 transform: translateY(150%);
+	 opacity:.001;
+	 will-change: transform, opacity;
+	}
+	.gsap-fade{
+		opacity:0;
+		transform: translateY(18px);
+		will-change: transform, opacity;
+	}
+
+/* ─── Responsive ─── */
+@media (max-width: 1100px){
+	.hero-foot{ grid-template-columns: 1fr }
+	.hero-coords{ text-align:left }
+	.book .subject-wrap{ grid-template-columns: 1fr; gap: 40px }
+  /* Below this breakpoint the notes and the widget stack into one column, which no
+	 100vh pin can hold — so Book has to unpin here, not at the 820px breakpoint
+	 where the other panels try to.
+	 !important is load-bearing, exactly as it is in the reduced-motion block: the
+	 pinned-panel rule is a selector LIST containing `.panels > section.book`
+	 (0,2,1) and it sits AFTER the media queries, so an equal-specificity unpin
+	 written here loses on source order and silently does nothing. (The mobile
+	 unpin at 820px has this bug and never applies to ANY panel — see the note
+	 there.)
+	 Unpinning takes away the height the widget was filling, so give the frame a
+	 flat clamped height back. NOT aspect-ratio: the frame is the full column width
+	 in one-column mode, and 4/5 of a wide column is a ~1700px tower. */
+	 .panels > section.book{
+	 	position: relative !important;
+	 	height: auto !important;
+	 	min-height: 100svh !important;
+	 	overflow: visible !important;
+	 }
+	 .book{ align-items:flex-start }
+	 .book-head{ align-self:start }
+  /* FIXED HEIGHT HERE TOO — the booking area must never resize itself.
+	 Book is auto-height at this width, so if the frame keeps its own postMessage
+	 height then every step of the form (service -> time -> client) changes the
+	 iframe's height attribute, which changes the section's height, which changes
+	 the document's height and shifts everything below it under the reader. A flat
+	 clamp makes the area a stable box and moves the difference inside the frame,
+	 where the widget scrolls its own document.
+	 A LENGTH, never `auto`: an HTML `height` attribute is a presentational hint
+	 that any author declaration beats, so `height:auto` does not hand the
+	 attribute back — it collapses the iframe to the replaced-element default of
+	 150px. This clamp is the same one the pre-React markup used. */
+	 .book-embed{ height: clamp(520px, 82vh, 820px) }
+	 .book-embed iframe{ height:100% !important; max-height:100% }
+  /* Book is auto-height here, so the panel no longer caps the form — an inner
+	 scroller would strand it in a short box inside a long page. */
+	 .book-paths{ height:auto }
+	 .enquiry{ overflow:visible; padding-right:0 }
+  /* THE SUBJECT TRACK UNPINS HERE FOR THE SAME REASON, and it is the one panel
+	 that MUST. Its height is `(1 + steps) × 100vh` — several viewports of scroll
+	 room for a horizontal rail that the motion hook does not run below 1101px. Left
+	 pinned it would be three blank screens after the first. Auto-height lets the
+	 rail's panels, now a vertical stack, size the section themselves.
+	 `!important` is load-bearing exactly as it is above: `.panels >
+	 section.subject-track` also appears in the pinned-panel selector list and in
+	 its own height rule, both LATER in this file, so an equal-specificity unpin
+	 written here would lose on source order and silently do nothing.
+	 This breakpoint is ONE NUMBER with two others — snapOn() in useSiteMotion and
+	 the matchMedia query that gates the rail's tween. Change them together. */
+	 .panels > section.subject-track{
+	 	position: relative !important;
+	 	height: auto !important;
+	 	min-height: 100svh !important;
+	 	overflow: visible !important;
+	 }
+  /* FORMATS UNPINS HERE TOO, and now it must (2026-09-03). Its three fields stack
+	 into one column at this width; measured stacked they run past a 768px viewport,
+	 and a 100vh `overflow: hidden` pin would cut the second format clean off the
+	 page. The old two-column card layout happened to fit, which is why this was not
+	 needed before. `!important` for the same source-order reason as the two rules
+	 above it. */
+	 .panels > section.formats{
+	 	position: relative !important;
+	 	height: auto !important;
+	 	min-height: 100svh !important;
+	 	overflow: visible !important;
+	 }
+  /* One column, and each field keeps its own ground — the ramp simply runs down
+	 the page instead of across it. The bar-clearing top inset belongs only to the
+	 first block once they are stacked. */
+	 .formats{
+	 	grid-template-columns: 1fr;
+	 	--field-top: clamp(30px, 5vh, 56px);
+	 }
+	 .formats-statement{
+	 	padding: 140px var(--page-x) clamp(30px, 5vh, 56px);
+	 }
+	 .format-field{
+	 	grid-template-rows: auto auto auto auto auto;
+	 	padding-left: var(--page-x); padding-right: var(--page-x);
+	 }
+	 .formats-statement h2{ font-size: clamp(26px, 4.4vw, 40px) }
+	 .format-title{ font-size: clamp(26px, 4.4vw, 40px); min-height: 0 }
+	.approach-rail{ grid-template-columns: 1fr; gap: 18px }
+	.approach-footnote{ margin-left: 0 }
+}
+@media (max-width: 820px){
+	:root{ --page-x: 18px; --bar-pad: 16px }
+	.enquiry-grid{ grid-template-columns: 1fr }
+	.nav-list{ display:none }
+	.menu-btn{ display:inline-flex; justify-self:end }
+	.bar{ grid-template-columns: 1fr auto }
+	.brand{ font-size: 40px }
+	.contact{ grid-template-columns: 1fr; align-items:start }
+	.contact-meta{ text-align:left }
+	footer{ justify-content:center }
+	.lang{ bottom: 12px }
+	.foot-mini{ display:none }
+	.cookies{ left:12px; right:12px; bottom:12px; box-shadow: 0 10px 28px rgba(22,19,17,.26); }
+	.progress{ display:none }
+	.hero{ padding: 160px var(--page-x) 80px }
+	.intro, .manifesto, .subject-track, .formats, .book, .contact{ padding-top: 140px; padding-bottom: 80px }
+  /* Unpin the text-dense panels on mobile so tall stacked content scrolls instead of
+	 clipping under the 100vh/overflow-hidden pin. Hero + route stay pinned so their
+	 scrubbed curtain / map-draw animations keep working. */
+	 .panels > section.intro,
+	 .panels > section.manifesto,
+	 .panels > section.formats,
+	 .panels > section.book,
+	 .panels > section.contact{
+	 	position: relative; height: auto; min-height: 100svh; overflow: visible;
+	 }
+  /* KNOWN BUG (pre-existing, not fixed here because it moves every panel): this
+	 rule never applies. It has the same specificity as the `.panels > section.<name>`
+	 entries in the pinned-panel selector list below, and that list comes LATER in
+	 the stylesheet, so source order wins and all of these panels stay pinned at
+	 100vh with overflow:hidden on mobile — clipping the very copy this was meant
+	 to release. The reduced-motion block solves it with !important, and the 1100px
+	 branch above now does the same for .book. Fixing it here means auditing every
+	 panel's stacked height on a phone. */
+	}
+
+/* ─── Pinned-panels reveal (sticky stack) ─── */
+.panels{
+	position: relative;
+}
+.panels > section,
+.panels > section.hero,
+.panels > section.intro,
+.panels > section.manifesto,
+.panels > section.subject-track,
+.panels > section.formats,
+.panels > section.route,
+.panels > section.book,
+.panels > section.contact{
+	position: sticky;
+	top: 0;
+	height: 100vh;
+	min-height: 100vh;
+	width: 100%;
+	background: #ffffff;
+	will-change: transform;
+	overflow: hidden;
+}
+/* Hero panel is taller so the curtain reveal can fully play out WITHOUT
+   any other panel sliding up underneath it. First 100vh of scroll runs the
+   curtain; the rest is dwell room before Intro begins pinning. */
+/* Height tuned so the NEXT panel begins sliding up exactly as the curtain clears
+   (curtain finishes at ~0.85vh of scroll; the panel enters the viewport at
+   height − 100vh). 175vh ⇒ enter at ~0.75vh = no blank-paper gap after the reveal. */
+   .panels > section.hero{
+   	height: 175vh;
+   	min-height: 175vh;
+   }
+/* Route panel needs scroll room for its draw-on animation BEFORE the next
+   panel starts sliding up. */
+   .panels > section.route{
+   	height: 220vh;
+   	min-height: 220vh;
+   }
+/* The subject track is taller than a viewport for the same reason the hero is:
+   its scrubbed animation — the horizontal rail — needs scroll to play out before
+   the next panel covers it. One viewport per step, where steps = panels − 1, so
+   one screen of vertical scroll advances the rail by exactly one panel.
+   `--track-steps` is written onto the section by SubjectTrackPanel from the same
+   array length that gives it `data-snap-steps` and gives the tween its travel;
+   all three have to agree or the rail settles between panels.
+   Formats begins sliding up at height − 100vh, which is precisely where the rail
+   finishes — the hero's no-blank-gap tuning, arrived at arithmetically. */
+   .panels > section.subject-track{
+   	height: calc(100vh * (1 + var(--track-steps, 1)));
+   	min-height: 100vh;
+   }
+/* Stack order: each later section sits on top, sliding up over the previous.
+   Must match document order exactly — add a section, add a rung.
+   (Until 2026-09-03 it did not: `antwerp` preceded `formats` in the markup but
+   sat a rung ABOVE it, so Formats never covered Antwerp. Both of those rungs are
+   gone — the two panels are now one `subject-track` — and the ladder is
+   renumbered to match document order with no gaps.) */
+   .panels > section.hero         { z-index: 1; }
+   .panels > section.intro        { z-index: 2; }
+   .panels > section.manifesto    { z-index: 3; }
+   .panels > section.subject-track{ z-index: 4; }
+   .panels > section.formats      { z-index: 5; }
+   .panels > section.book         { z-index: 6; }
+   .panels > section.contact      { z-index: 7; }
+/* Dead rung: there is no Route section in the markup. Kept in step with the rest
+   of the route CSS, which is documented dead code rather than removed. */
+   .panels > section.route        { z-index: 5; }
+
+/* Each section gets a top-edge shadow so the slide-up reveal reads as a real edge */
+.panels > section:not(.hero)::before{
+	content:"";
+	position: absolute;
+	inset: 0 0 auto 0;
+	height: 24px;
+	pointer-events: none;
+	background: linear-gradient(to bottom, rgba(22,19,17,.12), rgba(22,19,17,0));
+	opacity: 0;
+	transition: opacity 280ms cubic-bezier(.22,.61,.36,1);
+}
+.panels > section.is-incoming::before{ opacity: 1 }
+
+/* Section-specific backgrounds. The "A Colonial Present" panels — the subject
+   track (cover + rail) + Formats + Book — are one uninterrupted flat field of
+   --subject-bg, edge to edge, no inner container. That includes every panel ON
+   the rail: they are told apart by moving past you, never by a card or an edge.
+   Hero keeps warm paper; About + Contact are flat white (from the base rule) —
+   outside the subject. Entering and leaving the colour IS the umbrella cue. */
+   .panels > section.hero         { background: var(--paper);      }
+   .panels > section.subject-track{ background: var(--brand-white); }
+   .panels > section.formats      { background: var(--subject-bg); }
+   .panels > section.route        { background: var(--subject-bg); }
+   .panels > section.book         { background: var(--subject-bg); }
+
+/* Emphasis italics sit on --subject-bg inside the subject run, where --sky-deep
+   fails contrast (2.3:1). Swap in the deeper --sky-ink there only. */
+   .subject-title em,
+   .subject-lede em,
+   .subject-method em,
+   .track-head em,
+   .route-text h2 em,
+   .book-head h2 em{ color: var(--sky-ink) }
+
+/* Same story for the small archival-red labels inside the subject run. */
+.index-list .idx-n,
+.index-list .idx-state,
+.route-text .legend .num,
+.notes li .n{ color: var(--stamp-deep) }
+
+/* Active nav-link state (colour only — the underline sweep was removed). */
+.nav-list a.is-active,
+.bar.compact .nav-list a.is-active{ color: var(--brand-orange) }
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  /* Reduced motion removes ANIMATION, not STRUCTURE (changed 2026-09-01).
+	 The text reveals are the animation: the word masks and fade-ups are forced to
+	 their finished state, so nothing slides or fades in. `!important` beats the
+	 inline styles GSAP writes, which makes those tweens inert rather than merely
+	 invisible.
+
+	 What this block deliberately no longer does is UNPIN the panels. It used to
+	 set `position:static; height:auto; overflow:visible` on every panel, which
+	 also switched off the whole scroll design — with panels in normal flow the
+	 sections have nothing to snap to, and the hook skipped Lenis, so the snap
+	 engine was inert at every width. On a machine with reduced motion enabled the
+	 site read as broken: a frozen curtain, no pinning, no snapping. The site
+	 owner asked for sections to snap for everyone (2026-09-01), so the pinned
+	 layout is now shared by all users and this block keeps only the concession
+	 that is actually about motion.
+
+	 THE COST, ACCEPTED KNOWINGLY: pinned panels are `overflow:hidden`, so on a
+	 short viewport the bottom of the booking form is cut off — 114px at 900px
+	 tall, 367px at 618px. That was already true for every user without reduced
+	 motion; this makes reduced-motion users match them rather than be the one
+	 branch that rendered Book in full. The dual-axis clamps on every panel
+	 heading are what keep the rest of the copy inside the pin — see CLAUDE.md. */
+	.word .w-inner, .gsap-fade{ transform:none!important; opacity:1!important }
+	}
