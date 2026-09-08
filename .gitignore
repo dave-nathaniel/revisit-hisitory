@@ -4,6 +4,7 @@ dump/
 node_modules/
 scripts/
 
+*.code-workspace
 package-lock.json
 .env
 *.md
