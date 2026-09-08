@@ -307,13 +307,18 @@ export default function useSiteMotion(): void {
 			clearTimeout(snapResize);
 			snapResize = window.setTimeout(buildSnapTable, 180);
 		};
+		const onLoadRebuild = () => {
+			buildSnapTable();
+			runInitialNav();
+		};
 		addEventListener('resize', onResize);
-		addEventListener('load', buildSnapTable);
+		addEventListener('load', onLoadRebuild);
 		// This hook runs from a deferred module script. If anything (a warm cache, a
 		// fast refresh) lets the window finish loading first, that listener would never
 		// fire and the table would keep the pre-font, pre-image layout. Re-run it once
-		// in that case; the call is idempotent.
-		if (document.readyState === 'complete') requestAnimationFrame(buildSnapTable);
+		// in that case; the call is idempotent. runInitialNav rides along for the same
+		// reason: a deep link needs the same settled-layout snap table the rebuild does.
+		if (document.readyState === 'complete') requestAnimationFrame(onLoadRebuild);
 		buildSnapTable();
 
 		// Bridge Lenis ↔ GSAP. The ticker drives Lenis's rAF, and Lenis tells
@@ -341,7 +346,7 @@ export default function useSiteMotion(): void {
 		// position, so `top 85%` is satisfied for every one of them the moment the
 		// track pins, and the whole rail would reveal itself at once.
 		gsap.utils.toArray<HTMLElement>('.gsap-fade').forEach((el) => {
-			if (el.closest('.hero') || el.closest('.track-rail')) return;
+			if (el.closest('.hero') || el.closest('.track-rail') || el.closest('.gallery-rail')) return;
 			gsap.fromTo(
 				el,
 				{ opacity: 0, y: 18 },
@@ -357,7 +362,7 @@ export default function useSiteMotion(): void {
 
 		// Section heading word reveal
 		gsap.utils.toArray<HTMLElement>('[data-split]').forEach((el) => {
-			if (el.closest('.hero') || el.closest('.track-rail')) return;
+			if (el.closest('.hero') || el.closest('.track-rail') || el.closest('.gallery-rail')) return;
 			const words = el.querySelectorAll('.w-inner');
 			if (!words.length) return;
 			gsap.fromTo(
@@ -581,6 +586,95 @@ export default function useSiteMotion(): void {
 			});
 		}
 
+		// ─── FORMATS GALLERY: a second horizontal rail ───
+		// Deliberately a near-duplicate of the subject track block above rather than
+		// a shared helper reaching for both — see the note on FormatsPanel.tsx/
+		// site.css for why the two rails are kept independent. Every mechanism note
+		// on the subject track block applies here unchanged: sticky pin (not
+		// ScrollTrigger's), snap-table steps (not GSAP's own snap), absolute
+		// scroll-position triggers via staticTopOf, and the first-panel reveal
+		// exception.
+		const gallerySec = document.querySelector<HTMLElement>('.formats');
+		if (gallerySec) {
+			const galleryPanels = gsap.utils.toArray<HTMLElement>('.gallery-rail .gallery-panel');
+			const gallerySteps = galleryPanels.length - 1;
+
+			mm.add('(min-width: 1101px)', () => {
+				if (gallerySteps < 1) return;
+				const galleryTween = gsap.to(galleryPanels, {
+					xPercent: -100 * gallerySteps,
+					ease: 'none',
+					scrollTrigger: {
+						trigger: gallerySec,
+						start: () => staticTopOf(gallerySec),
+						end: () => staticTopOf(gallerySec) + window.innerHeight * gallerySteps,
+						scrub: 0.3,
+						invalidateOnRefresh: true,
+					},
+				});
+
+				const firstGalleryPanel = galleryPanels[0];
+				const enteringGallerySection = () => ({
+					trigger: gallerySec,
+					start: () => staticTopOf(gallerySec) - window.innerHeight * 0.85,
+					end: () => staticTopOf(gallerySec),
+					once: true,
+				});
+				const revealGalleryTrigger = (el: HTMLElement, start: string) =>
+					firstGalleryPanel?.contains(el)
+						? enteringGallerySection()
+						: { trigger: el, containerAnimation: galleryTween, start, once: true };
+
+				gallerySec.querySelectorAll<HTMLElement>('.gallery-rail [data-split]').forEach((el) => {
+					const words = el.querySelectorAll('.w-inner');
+					if (!words.length) return;
+					gsap.fromTo(
+						words,
+						{ y: '150%', opacity: 0 },
+						{
+							y: 0,
+							opacity: 1,
+							duration: 1,
+							ease: 'expo.out',
+							stagger: 0.035,
+							scrollTrigger: revealGalleryTrigger(el, 'left 80%'),
+						},
+					);
+				});
+
+				gallerySec.querySelectorAll<HTMLElement>('.gallery-rail .gsap-fade').forEach((el) => {
+					gsap.fromTo(
+						el,
+						{ opacity: 0, y: 18 },
+						{
+							opacity: 1,
+							y: 0,
+							duration: 1,
+							ease: 'power3.out',
+							scrollTrigger: revealGalleryTrigger(el, 'left 85%'),
+						},
+					);
+				});
+			});
+
+			// Below the breakpoint the rail is a plain vertical stack.
+			mm.add('(max-width: 1100px)', () => {
+				gallerySec.querySelectorAll<HTMLElement>('.gallery-rail .gsap-fade').forEach((el) => {
+					gsap.fromTo(
+						el,
+						{ opacity: 0, y: 18 },
+						{
+							opacity: 1,
+							y: 0,
+							duration: 1,
+							ease: 'power3.out',
+							scrollTrigger: { trigger: el, start: 'top 85%', once: true },
+						},
+					);
+				});
+			});
+		}
+
 		// ─── PINNED PANELS: active section tracking + incoming-edge shadow ───
 		// Each section is sticky; the "active" one is the one currently filling the
 		// viewport (its top has hit the top of the viewport).
@@ -620,30 +714,75 @@ export default function useSiteMotion(): void {
 		if (panels[0]) setActiveSection(panels[0].id);
 
 		// ─── In-page links → Lenis ───
+		// NAV_ITEMS now hrefs real paths ('/about', '/book', '/contact') rather than
+		// hashes, so a direct visit to one of those URLs lands on its section — see
+		// runInitialNav / onPopState below. Clicking still scrolls in-page rather
+		// than reloading; it just also updates the URL via pushState, so the two
+		// entry points (click vs. direct load) stay in sync. The footer's '#top'
+		// link is untouched — it is not a menu item and was never asked to become a
+		// real path.
 		const onNavClick = (e: Event) => {
 			const a = e.currentTarget as HTMLAnchorElement;
 			const href = a.getAttribute('href');
-			if (!href || !href.startsWith('#')) return;
-			const t = document.querySelector(href);
-			if (!t) return;
+			if (!href || !(href.startsWith('#') || href.startsWith('/'))) return;
+			const t = href.startsWith('#') ? document.querySelector(href) : null;
+			if (href.startsWith('#') && !t) return;
 			e.preventDefault();
-			// Resolve through the snap table, not the element: t is sticky, so its rect
-			// reports where it is parked, not where its panel starts. Nav and snap have
-			// to agree on that number or a jump lands mid-transition and the settle
-			// immediately drags it somewhere else.
+			// Resolve through the snap table, not the element: a target section is
+			// sticky, so its rect reports where it is parked, not where its panel
+			// starts. Nav and snap have to agree on that number or a jump lands
+			// mid-transition and the settle immediately drags it somewhere else.
 			const navId = href.slice(1);
 			const navTop = navId === 'top' ? 0 : snapIds[navId];
 			if (lenis) {
 				snapping = true;
-				lenis.scrollTo(navTop !== undefined ? navTop : t, { offset: 0, duration: 1.0 });
+				lenis.scrollTo(navTop !== undefined ? navTop : (t ?? 0), { offset: 0, duration: 1.0 });
 				window.setTimeout(() => {
 					snapping = false;
 				}, 1140);
-			} else t.scrollIntoView({ behavior: 'smooth' });
+			} else if (t) t.scrollIntoView({ behavior: 'smooth' });
+			if (href.startsWith('/') && navTop !== undefined) history.pushState(null, '', href);
 			document.getElementById('menuOverlay')?.classList.remove('open');
 		};
 		const navAnchors = Array.from(document.querySelectorAll('a[data-link]'));
 		navAnchors.forEach((a) => a.addEventListener('click', onNavClick));
+
+		// ─── Deep links: /about, /book, /contact land straight on their section ───
+		// Runs once, off the same 'load'-timed calls that (re)build the snap table —
+		// snapIds is only trustworthy once layout (fonts, images) has settled, which
+		// is also why this is not attempted from the very first synchronous
+		// buildSnapTable() call below.
+		const routeSectionIds = new Set(['about', 'book', 'contact']);
+		let initialNavDone = false;
+		const runInitialNav = () => {
+			if (initialNavDone) return;
+			const id = window.location.pathname.replace(/^\/+|\/+$/g, '');
+			if (!routeSectionIds.has(id)) {
+				initialNavDone = true;
+				return;
+			}
+			const target = snapIds[id];
+			if (target === undefined) return; // table not ready yet — try again next call
+			initialNavDone = true;
+			if (lenis) lenis.scrollTo(target, { immediate: true });
+			else window.scrollTo(0, target);
+		};
+
+		// Browser back/forward between those same paths, so the pin holds both ways.
+		const onPopState = () => {
+			const id = window.location.pathname.replace(/^\/+|\/+$/g, '');
+			if (!routeSectionIds.has(id)) return;
+			const target = snapIds[id];
+			if (target === undefined) return;
+			if (lenis) {
+				snapping = true;
+				lenis.scrollTo(target, { duration: 1.0 });
+				window.setTimeout(() => {
+					snapping = false;
+				}, 1140);
+			} else window.scrollTo(0, target);
+		};
+		addEventListener('popstate', onPopState);
 
 		ScrollTrigger.refresh();
 		buildSnapTable();
@@ -701,7 +840,8 @@ export default function useSiteMotion(): void {
 			// branches' tweens and triggers survive a context revert unless killed here.
 			mm.kill();
 			removeEventListener('resize', onResize);
-			removeEventListener('load', buildSnapTable);
+			removeEventListener('load', onLoadRebuild);
+			removeEventListener('popstate', onPopState);
 			if (lenis) {
 				gsap.ticker.remove(tick);
 				lenis.off('scroll', onSnapScroll);

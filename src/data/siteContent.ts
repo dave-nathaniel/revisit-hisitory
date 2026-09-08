@@ -12,9 +12,9 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-	{ href: '#about', label: 'About' },
-	{ href: '#book', label: 'Book' },
-	{ href: '#contact', label: 'Contact' },
+	{ href: '/about', label: 'About' },
+	{ href: '/book', label: 'Book' },
+	{ href: '/contact', label: 'Contact' },
 ];
 
 export const LANGUAGES: readonly string[] = ['EN', 'NL'];
@@ -29,15 +29,19 @@ export const HERO = {
 
 export const INTRO = {
 	crumb: 'About',
-	/** Lede tail — the sentence continues after the two-tone wordmark. */
-	bodyTail: ' is a reflective concept that looks at the past to better understand the present.',
-	supportFirst:
-		'History is not only something that happened before us. It continues to shape the places we live in, the structures around us and the way we understand the world today. At the same time, history is something we continue to make every day.',
-	/** Second support paragraph opens with the wordmark, so only its tail is copy. */
+	/** The lede. Plain copy, no wordmark — unlike the support paragraphs below, it
+	 *  does not mention "Revisit History" by name. */
+	title: 'You exist in the context of all in which you live and what came before you.',
+	/** First support paragraph opens with the wordmark, so only its tail is copy. */
+	supportFirstTail:
+		' starts from a simple idea: we do not live separately from the past. The cities we move through, the institutions that shape our societies, the ideas we hold and the ways we relate to one another have all been shaped by what came before us.',
+	/** Second support paragraph carries the wordmark mid-sentence, so it is split
+	 *  around it rather than opening with it. */
+	supportSecondLead:
+		'Yet we often look at the present as if it stands on its own, disconnected from the histories that helped create it. ',
 	supportSecondTail:
-		' creates ways of engaging with this connection between past and present through different public and participatory formats.',
-	supportThird:
-		'Our approach does not rely solely on traditional historical narratives. Instead, we combine knowledge-sharing with observation, reflection and dialogue.',
+		' invites us to look again. By returning to the past and tracing how history continues to shape the world around us, we gain a deeper understanding of the present.',
+	supportThird: 'We revisit history not to remain in the past, but to better understand where we stand today.',
 } as const;
 
 export const MANIFESTO = {
@@ -57,7 +61,7 @@ export const SUBJECT = {
 	titleLead: 'A Colonial ',
 	/** "Present", not "Presence" — a deliberate double entendre. Never "correct" it. */
 	titleEm: 'Present',
-	lede: 'Belgium’s colonial history is part of Belgian history. It does not define Belgium as a whole, nor does it define its history as a whole. But it is an important chapter within that history, and deserves the same space for knowledge, understanding and reflection as any other part of our shared history.',
+	lede: 'Revisit History: A Colonial Present explores Belgium’s colonial history and the ways in which it continues to shape Belgian society today. Belgian colonial history is an important part of the country’s past, yet its significance and continued relevance have often remained underexplored. Its legacy can still be traced throughout contemporary society — from our cities and institutions to the ways we understand and relate to one another. By revisiting this history, we bring these connections into view and create space to reflect on how the past continues to resonate in the present.',
 	/** Method paragraph one carries an italic pivot mid-sentence, so it is split around it. */
 	methodOneLead:
 		'A Colonial Present explores this history through its connections to the world and society we live in today. History is, in many ways, ',
@@ -121,7 +125,6 @@ export const SUBJECT_TRACK = {
 			kind: 'statement',
 			headLead: 'Antwerp as a ',
 			headEm: 'starting point.',
-			turn: 'The city therefore becomes part of the learning experience.',
 		},
 		{
 			ord: 'II',
@@ -233,27 +236,70 @@ export const FORMATS = {
 	] as readonly FormatCard[],
 } as const;
 
+export interface GalleryImage {
+	readonly ord: string;
+	readonly src: string;
+	readonly alt: string;
+	readonly caption?: string;
+	readonly credit?: string;
+}
+
+/**
+ * THE FORMATS GALLERY — rail panels III–V, appended after the two format
+ * fields (I, II) on the same horizontal rail. See the long note on
+ * FormatsPanel.tsx for why this rides the format cards' rail rather than
+ * getting a rail of its own.
+ *
+ * Faces in all three source photographs are deliberately soft-blurred
+ * (scripts/blur-faces.mjs bakes this in ahead of time — see public/gallery) so
+ * the participants photographed on past tours stay unidentifiable.
+ */
+export const GALLERY = {
+	/** Shown once, on the rail's first panel only — same idiom as SUBJECT_TRACK.hint. */
+	hint: 'Scroll',
+	images: [
+		{
+			ord: 'III',
+			src: '/gallery/gallery-1.jpg',
+			alt: 'Tour participants annotate a worksheet on an Antwerp street during a Colonial Present walk.',
+			caption: 'Working through a set of guided questions during the walk.',
+			credit: 'Image by Jonathan Ramael',
+		},
+		{
+			ord: 'IV',
+			src: '/gallery/gallery-2.jpg',
+			alt: 'A small group compares notes on a question sheet during a school tour in Antwerp city centre.',
+			caption: 'Comparing notes between stops on the route.',
+			credit: 'Image by Jonathan Ramael',
+		},
+		{
+			ord: 'V',
+			src: '/gallery/gallery-3.jpg',
+			alt: 'A tour group gathers before the Brabo statue and the Steen in Antwerp.',
+			caption: 'Gathered at the Steen, one of the tour’s starting points.',
+		},
+	] as readonly GalleryImage[],
+} as const;
+
 export interface BookNote {
-	readonly n: string;
 	/** null on the note that ends in an inline mailto — composed in the component. */
 	readonly text: string | null;
 }
 
 export const BOOK = {
 	crumb: 'A Colonial Present · Booking',
-	headLead: 'Reserve your ',
-	headEm: 'place.',
+	headLead: 'Book your ',
+	headEm: 'spot.',
 	notes: [
-		{ n: 'i', text: 'Group size is limited to 15 participants per guide.' },
-		{ n: 'ii', text: 'Booking confirmation and practical details will be sent by email.' },
-		{ n: 'iii', text: 'Tours are given in Dutch.' },
-		{ n: 'iv', text: null },
+		{ text: 'Tours are given in Dutch.' },
+		{ text: 'Booking confirmation and practical details will be sent by email.' },
+		{ text: null },
 	] as readonly BookNote[],
-	/* Note iv used to send organisations and schools to email. That is now the
-	   Groups & schools tab beside these notes, so pointing at a mailto here would
-	   offer two doors to the same room. Reworded to the general question — which
-	   keeps the site's one inline mailto, and with it the deliberate .inline-link
-	   exception to the no-borders rule. */
+	/* The last note used to send organisations and schools to email. That is now
+	   the Groups & schools tab beside these notes, so pointing at a mailto here
+	   would offer two doors to the same room. Reworded to the general question —
+	   which keeps the site's one inline mailto, and with it the deliberate
+	   .inline-link exception to the no-borders rule. */
 	noteFourLead: 'Questions before you book? Write to ',
 	noteFourTail: '.',
 } as const;
@@ -286,7 +332,7 @@ export const GROUP_ENQUIRY = {
 	tabIndividual: 'Individual',
 	tabGroup: 'Groups & schools',
 	/** Sits above the form in place of a calendar, so the absence of one reads as intent. */
-	lede: 'Group and school tours are arranged by hand — tell us what you need and we answer by email within two working days.',
+	lede: 'Group and school tours are arranged — tell us what you need and we answer by email within two working days.',
 	fields: [
 		{ name: 'organisation', label: 'Name of organisation', type: 'text', required: true, autoComplete: 'organization' },
 		{ name: 'tourType', label: 'Tour type', type: 'select', required: true, options: ['Group', 'School/Institution'] },
@@ -307,22 +353,42 @@ export const GROUP_ENQUIRY = {
 	/** Shown when the POST fails; the mailto keeps the enquiry recoverable. */
 	failure: 'That did not send. Please write to us directly:',
 	/**
-	 * Where the enquiry goes.
-	 *
-	 * Empty string = no endpoint configured yet, and the form falls back to
-	 * opening a pre-filled mail client. That fallback is a floor, not a plan:
-	 * it silently loses anyone without a mail client set up. Paste a Formspree
-	 * (`https://formspree.io/f/<id>`) or Web3Forms endpoint here and the form
-	 * POSTs instead — no other change needed, and nothing secret ships, since
-	 * these endpoints are designed to be public.
+	 * Where the enquiry goes: our own SMTP-backed endpoint (see server/index.js).
+	 * The mailto fallback above still fires if this ever fails or is unset.
 	 */
-	endpoint: '',
+	endpoint: '/api/enquiry',
 	subject: 'Group tour enquiry',
 } as const;
 
+/**
+ * THE CONTACT FORM — replaces the old plain mailto heading. Delivered the same
+ * way the group enquiry is: POSTed as JSON to our own SMTP endpoint
+ * (server/index.js), with a mailto fallback if that ever fails. See
+ * ContactPanel.tsx and src/lib/contact.ts.
+ */
+export interface ContactField {
+	readonly name: string;
+	readonly label: string;
+	readonly type: 'text' | 'email' | 'textarea';
+	readonly required: boolean;
+	readonly autoComplete?: string;
+}
+
 export const CONTACT = {
-	headLead: 'Talk with us — write ',
-	meta: ['Acces vzw', 'Antwerpen, België', 'Mon — Fri', 'By appointment'],
+	headLead: 'Contact us.',
+	fields: [
+		{ name: 'name', label: 'Your name', type: 'text', required: true, autoComplete: 'name' },
+		{ name: 'email', label: 'Your email', type: 'email', required: true, autoComplete: 'email' },
+		{ name: 'message', label: 'Message', type: 'textarea', required: true },
+	] as readonly ContactField[],
+	submit: 'Send message',
+	sending: 'Sending…',
+	success: 'Thank you — your message is with us. We answer by email within two working days.',
+	handedOff:
+		'Your mail app should have opened with this message ready — press Send there to finish. Nothing has reached us until you do.',
+	failure: 'That did not send. Please write to us directly:',
+	endpoint: '/api/contact',
+	subject: 'Website enquiry',
 } as const;
 
 export const FOOTER_LINK = { href: '#top', label: 'Back to top ↑' } as const;

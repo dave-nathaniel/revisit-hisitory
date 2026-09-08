@@ -1,55 +1,96 @@
+import type { CSSProperties } from 'react';
 import FormatField from './FormatField';
-import { FORMATS } from '../../data/siteContent';
+import { FORMATS, GALLERY } from '../../data/siteContent';
 
 /**
  * PUBLIC FORMATS — content of the A Colonial Present subject, so it carries an
  * `A Colonial Present · …` breadcrumb rather than an umbrella-level one, and
  * stays inside the subject's colour world.
  *
- * REBUILT 2026-09-03 (the site owner on the previous version: "I don't like the
- * presentation at all"). It is now a three-field split, borrowing the grammar the
- * subject track above it established — a thin standing statement on the left,
- * content in wide fields on the right:
+ * REBUILT AGAIN (this time into a rail, at the site owner's request: "make
+ * [this section] a GSAP slider like 'A Colonial Present' … more of a gallery
+ * with the images"). Structurally identical to SubjectTrackPanel: a
+ * stationary cover on the left carries the panel's statement, and a
+ * horizontal rail on the right carries the two format fields followed by the
+ * tour gallery (SUBJECT_TRACK's `track-*` classes are not reused — see the
+ * note in site.css — so this gets its own parallel `gallery-*` set, and
+ * useSiteMotion.ts duplicates rather than generalises the rail's tween for the
+ * same reason: a change to one rail must never silently reach the other).
  *
- *   [ statement ][ format I ][ format II ]
- *
- * The statement rail keeps the panel's framing copy; each format owns a
- * full-height field with its own ground. The head is deliberately DEMOTED from
- * the display size it used to have: on a panel whose job is to present two
- * offers, the offers' names are what should shout, and the house rule is one
- * shout per surface. Its `data-split` word reveal is unchanged.
- *
- * `.formats-statement h2` is still clamped on both axes, and this panel is still the
- * reason that rule exists — sized on width alone it overflowed a 618px-tall
- * viewport by 221px and the copy silently vanished under the 100vh
- * `overflow: hidden` pin. Every size in the fields is clamped the same way.
- * Verify any copy change by measuring content height against innerHeight at
- * ~618px tall, not by eye at desktop size.
- *
- * There is no `.subject-wrap` here any more: the fields are full-bleed, so the
- * `--max` cap would have left a band of ground down both edges of a layout whose
- * whole point is that the fields ARE the panel.
+ * THE SAME "THREE NUMBERS DERIVE FROM ONE ARRAY" RULE APPLIES HERE. `steps` —
+ * and with it `--gallery-steps` (the section's height) and `data-snap-steps`
+ * (the snap ladder's stops) — is `railItems.length - 1`. Add a format or a
+ * gallery image and all three follow automatically.
  */
 export interface FormatsPanelProps {
 	readonly id?: string;
 }
 
-export default function FormatsPanel({ id = 'formats' }: FormatsPanelProps) {
-	return (
-		<section className="formats" id={id} data-section="formats">
-			<div className="formats-statement">
-				<div className="eyebrow crumb gsap-fade">{FORMATS.crumb}</div>
-				<h2 data-split="">
-					{FORMATS.headLead}
-					<em>{FORMATS.headEm}</em>
-					{FORMATS.headTail}
-				</h2>
-				<p className="formats-lede gsap-fade">{FORMATS.lede}</p>
-			</div>
+type RailItem =
+	| { readonly kind: 'format'; readonly key: string; readonly index: number; readonly card: (typeof FORMATS.cards)[number] }
+	| { readonly kind: 'image'; readonly key: string; readonly image: (typeof GALLERY.images)[number] };
 
-			{FORMATS.cards.map((card, i) => (
-				<FormatField card={card} index={i + 1} key={card.ord} />
-			))}
+export default function FormatsPanel({ id = 'formats' }: FormatsPanelProps) {
+	const railItems: readonly RailItem[] = [
+		...FORMATS.cards.map(
+			(card, i): RailItem => ({ kind: 'format', key: card.ord, index: i + 1, card }),
+		),
+		...GALLERY.images.map((image): RailItem => ({ kind: 'image', key: image.ord, image })),
+	];
+	const steps = railItems.length - 1;
+
+	return (
+		<section
+			className="formats"
+			id={id}
+			data-section="formats"
+			data-snap-steps={steps}
+			style={{ '--gallery-steps': steps } as CSSProperties}
+		>
+			<div className="gallery-stage">
+				<div className="gallery-cover">
+					<div className="eyebrow crumb gsap-fade">{FORMATS.crumb}</div>
+					<h2 className="formats-head" data-split="">
+						{FORMATS.headLead}
+						<em>{FORMATS.headEm}</em>
+						{FORMATS.headTail}
+					</h2>
+					<p className="formats-lede gsap-fade">{FORMATS.lede}</p>
+				</div>
+
+				<div className="gallery-viewport">
+					<div className="gallery-rail">
+						{railItems.map((item, i) => (
+							<article className={`gallery-panel gallery-panel--${item.kind}`} key={item.key}>
+								{item.kind === 'format' ? (
+									<FormatField card={item.card} index={item.index} />
+								) : (
+									<>
+										<div className="gallery-ord gsap-fade">{item.image.ord}</div>
+										<figure className="gallery-figure">
+											<img src={item.image.src} alt={item.image.alt} loading="lazy" decoding="async" />
+											<figcaption className="gsap-fade">
+												{item.image.caption && (
+													<span className="gallery-caption">{item.image.caption}</span>
+												)}
+												{item.image.credit && (
+													<span className="gallery-credit">{item.image.credit}</span>
+												)}
+											</figcaption>
+										</figure>
+									</>
+								)}
+								{i === 0 && (
+									<p className="gallery-hint gsap-fade">
+										{GALLERY.hint}
+										<span className="arrow" aria-hidden="true" />
+									</p>
+								)}
+							</article>
+						))}
+					</div>
+				</div>
+			</div>
 		</section>
 	);
 }

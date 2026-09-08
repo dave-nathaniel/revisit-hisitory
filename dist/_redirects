@@ -1,0 +1,5 @@
+# SPA fallback for static hosts that honour this file (Netlify, and others
+# with compatible support). Vite's own dev/preview servers and server/index.js
+# already do this themselves — this file only matters if the built `dist/` is
+# deployed to a plain static host instead of served by server/index.js.
+/*    /index.html   200

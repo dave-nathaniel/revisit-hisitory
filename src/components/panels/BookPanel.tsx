@@ -63,24 +63,21 @@ export default function BookPanel({ id = 'book' }: BookPanelProps) {
 						{BOOK.headLead}
 						<em>{BOOK.headEm}</em>
 					</h2>
-					<ol className="notes" aria-label="Important notes">
-						{BOOK.notes.map((note) => (
-							<li className="gsap-fade" key={note.n}>
-								<span className="n">{note.n}</span>
-								<span>
-									{note.text ?? (
-										<>
-											{BOOK.noteFourLead}
-											<a href={`mailto:${CONTACT_EMAIL}`} className="inline-link">
-												{CONTACT_EMAIL}
-											</a>
-											{BOOK.noteFourTail}
-										</>
-									)}
-								</span>
+					<ul className="notes" aria-label="Important notes">
+						{BOOK.notes.map((note, i) => (
+							<li className="gsap-fade" key={i}>
+								{note.text ?? (
+									<>
+										{BOOK.noteFourLead}
+										<a href={`mailto:${CONTACT_EMAIL}`} className="inline-link">
+											{CONTACT_EMAIL}
+										</a>
+										{BOOK.noteFourTail}
+									</>
+								)}
 							</li>
 						))}
-					</ol>
+					</ul>
 				</div>
 
 				{/* The widget is cross-origin, so its colours can only be set through the

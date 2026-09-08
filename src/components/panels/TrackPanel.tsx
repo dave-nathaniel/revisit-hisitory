@@ -38,7 +38,7 @@ export default function TrackPanel({ panel, hint }: TrackPanelProps) {
 						{panel.headLead}
 						<em>{panel.headEm}</em>
 					</h2>
-					<p className="track-turn gsap-fade">{panel.turn}</p>
+					{panel.turn && <p className="track-turn gsap-fade">{panel.turn}</p>}
 					{hint && (
 						<p className="track-hint gsap-fade">
 							{hint}

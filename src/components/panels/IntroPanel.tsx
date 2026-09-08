@@ -31,12 +31,15 @@ export default function IntroPanel({ id = 'about' }: IntroPanelProps) {
 						<RhMark /> · {INTRO.crumb}
 					</div>
 					<p className="intro-body" data-scrollread="">
-						<RhMark onLight />
-						{INTRO.bodyTail}
+						{INTRO.title}
 					</p>
 					<div className="intro-support">
-						<p className="gsap-fade">{INTRO.supportFirst}</p>
 						<p className="gsap-fade">
+							<RhMark />
+							{INTRO.supportFirstTail}
+						</p>
+						<p className="gsap-fade">
+							{INTRO.supportSecondLead}
 							<RhMark />
 							{INTRO.supportSecondTail}
 						</p>
