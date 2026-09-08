@@ -980,6 +980,7 @@ html.lenis,html.lenis body{height:auto}
 	font-family:"Tactic", "Helvetica Neue", sans-serif;
 	font-size: 11px; letter-spacing: .24em; text-transform: uppercase;
 	color: var(--stamp-deep);
+	display: none; /* dont want the numeral thing */
 }
 /* THE LOUD THING ON THE PANEL, which is the point of the rebuild. `min-height`
    is two lines' worth so both titles occupy the same block and the two spec

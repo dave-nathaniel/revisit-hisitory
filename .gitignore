@@ -3,6 +3,7 @@ dump/
 .claude/
 node_modules/
 
-.env
-CLAUDE.md
 package-lock.json
+.env
+*.md
+!README.md
