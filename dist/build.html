@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=0.8,user-scalabel=no" />
+	<title>ACCES — Revisit History</title>
+	<meta name="description" content="A reflective project by Acces — accessible knowledge-sharing around the theme of coloniality. Walking tours, bike rides, dialogue in motion. Antwerp." />
+<!-- Official Acces font — Tactic — loaded locally from /fonts (see src/styles/site.css) -->
+
+<!-- Lenis (smooth scroll, MIT) stays a CDN <script> at this exact pinned
+	 version: the motion hook reads window.Lenis, and a version bump could alter
+	 the scroll easing this whole page is tuned around. It is blocking (no defer)
+	 so it is ready before the deferred module script below runs.
+
+	 GSAP and ScrollTrigger used to sit beside it here. They are now npm
+	 dependencies, pinned to the same 3.12.5 these tags served, so that useGSAP
+	 can put every tween and trigger in a context it can revert. -->
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+
+<!-- SimplyBook booking widget loader. In the original this <script> sat inside
+	 the Book panel and ran during parsing; here the panel is rendered by React,
+	 so without this the fetch would not even start until after mount and the
+	 booking form would appear noticeably later. `defer` fetches it in parallel
+	 with the app bundle and runs it just before the module script, so
+	 window.SimplybookWidget is already defined when useSimplybookWidget looks
+	 for it. Loading the file has no side effects — it only defines the
+	 constructor. It is the CONSTRUCTOR that must be handed a container, or it
+	 falls back to document.write and replaces the whole document. -->
+<script defer src="//widget.simplybook.it/v2/widget/widget.js"></script>
+  <script type="module" crossorigin src="/assets/index-Dc5MIib5.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/style-Bk0vlrjB.css">
+</head>
+<body>
+<div id="root"></div>
+</body>
+</html>
