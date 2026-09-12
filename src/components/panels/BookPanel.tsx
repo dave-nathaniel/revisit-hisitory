@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import useSimplybookWidget from '../../hooks/useSimplybookWidget';
-import { BOOK, CONTACT_EMAIL, GROUP_ENQUIRY } from '../../data/siteContent';
+import { BOOK, GROUP_ENQUIRY } from '../../data/siteContent';
 import GroupEnquiryForm from './GroupEnquiryForm';
 
 /**
