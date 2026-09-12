@@ -1337,8 +1337,13 @@ html.lenis,html.lenis body{height:auto}
 	 one — the SimplyBook widget asks for ~1094px and a pinned 100vh panel cannot
 	 give it that — so every vertical pixel spent on padding here is a pixel the
 	 reader has to scroll for inside the frame. Trimmed 2026-09-01 (was 12.5vh /
-	 7vh), which hands the widget ~64px back at 900px tall. */
-   	padding: clamp(64px, 8.5vh, 96px) var(--page-x) clamp(28px, 4vh, 48px);
+	 7vh), which hands the widget ~64px back at 900px tall.
+	 RAISED AGAIN 2026-09-12, and the floor is the load-bearing half. At 64px the
+	 Individual/Groups tab row began 4px under a 60px fixed bar on a 720p laptop —
+	 close enough to read as clipped, which is the "can't see the top" half of the
+	 complaint. 88px is the bar plus a real gap. The pixels come back out of the
+	 form, which was compacted to match — see `.enquiry-field` below. */
+   	padding: clamp(88px, 10.5vh, 112px) var(--page-x) clamp(28px, 4vh, 48px);
    	display:flex;
    	align-items:stretch;
    	justify-content:center;
@@ -1492,6 +1497,35 @@ html.lenis,html.lenis body{height:auto}
    .book-switch button.is-on:hover{ background: var(--stamp-deep); color: var(--paper) }
 
    .book-pane{ display:grid; grid-template-rows:1fr; min-height:0; min-width:0 }
+/* THE TWO PANES WANT OPPOSITE THINGS OUT OF THE SAME BOX, so the enquiry pane is
+   singled out by what it contains rather than by a second class.
+   The widget pane must STRETCH: `.book-embed` is `height:100%`, and an iframe
+   whose row is content-sized falls back to its own 1094px height attribute and
+   hangs out of the panel (the bug the `minmax(0,1fr)` chain above exists to stop).
+   The enquiry pane must NOT stretch: the form is a fixed stack of six fields, so
+   a 1fr row hands it 150–320px it cannot use and parks the whole thing hard
+   against the top of the panel with a void underneath — while the notes column
+   beside it is `align-self: center`. The two columns read as misaligned because
+   they were. Content-sized row + centred content puts the form on the same
+   optical line as the heading next to it. */
+   .book-pane:has(.enquiry),
+   .book-pane:has(.enquiry-done){
+   	grid-template-rows: minmax(0, auto);
+   	align-content: center;
+   }
+/* AND THE TAB ROW COMES WITH IT. Centring only the pane left the two tabs pinned
+   to the top of the panel with ~130px of nothing between them and the form they
+   switch — they stopped reading as a control FOR the form. `.book-paths` owns
+   both rows, so it is the thing that centres; the pane above just stops the form
+   stretching inside it.
+   `:not([hidden])` is doing real work: `:has()` is structural and matches a
+   descendant of the inactive pane too, so without it the widget tab would inherit
+   the enquiry's layout and lose the full-height stretch its iframe depends on. */
+   .book-paths:has(.book-pane:not([hidden]) .enquiry),
+   .book-paths:has(.book-pane:not([hidden]) .enquiry-done){
+   	grid-template-rows: auto auto;
+   	align-content: center;
+   }
 /* Explicit, because the rule above sets display and would beat the UA sheet's
    [hidden] rule. Both panes stay in the document — the widget must never
    unmount. */
@@ -1499,7 +1533,7 @@ html.lenis,html.lenis body{height:auto}
 
 /* ─── The group enquiry form ─── */
    .enquiry{
-   	display:flex; flex-direction:column; gap: clamp(12px, 2vh, 22px);
+   	display:flex; flex-direction:column; gap: clamp(10px, 1.7vh, 20px);
    	min-height:0; overflow-y:auto; overscroll-behavior: contain; padding-right: 8px;
    }
    .enquiry-lede{
@@ -1510,6 +1544,10 @@ html.lenis,html.lenis body{height:auto}
    	display:grid; grid-template-columns: repeat(2, minmax(0,1fr));
    	gap: clamp(10px, 1.6vh, 18px) clamp(16px, 1.6vw, 30px);
    }
+/* One token for the field's vertical padding, because the select's caret is
+   positioned against the input's box and has to move with it — hard-coding the
+   caret's offset against a clamped padding is how it ends up floating. */
+   .enquiry-field{ --field-pad-y: clamp(9px, 1.3vh, 12px) }
    .enquiry-field{ position:relative; margin:0; display:grid; gap:6px; min-width:0 }
    .enquiry-field.is-wide{ grid-column: 1 / -1 }
    .enquiry-field label{
@@ -1522,16 +1560,22 @@ html.lenis,html.lenis body{height:auto}
    subject's tan ground, the same tone step the white About/Contact panels make
    against it. `border:0` here joins the three existing resets; inputs are not
    covered by the button/iframe ones and would otherwise ship a UA outline. */
+/* FIELD PADDING IS HEIGHT-CLAMPED, not a flat 11px (2026-09-12). Six fields plus
+   a textarea multiply every vertical pixel here by roughly eight, so this one
+   value moved the form ~40px on a short laptop — which is what paid for the extra
+   top padding on `.book` without pushing the Send button into an inner scroll.
+   The 9px floor is still a comfortable touch target once the 14px line-box is
+   counted (≈38px tall, over the 24px WCAG 2.5.8 minimum). */
    .enquiry-field input,
    .enquiry-field select,
    .enquiry-field textarea{
    	font: inherit; font-size: clamp(14px, 1vw, 16px); line-height:1.4;
    	color: var(--ink); background: #ffffff;
-   	padding: 11px 13px; width:100%; min-width:0;
+   	padding: var(--field-pad-y) 13px; width:100%; min-width:0;
    	border:0; border-radius:0; appearance:none;
    	transition: box-shadow var(--t-fast);
    }
-   .enquiry-field textarea{ resize:vertical; min-height: 76px }
+   .enquiry-field textarea{ resize:vertical; min-height: clamp(58px, 8vh, 84px) }
 
 /* Focus has to be visible (WCAG 2.4.7) and colour alone will not do it. Drawn as
    a filled bar sitting inside the field rather than as an outline around it —
@@ -1546,7 +1590,9 @@ html.lenis,html.lenis body{height:auto}
 /* Caret for the select, as a solid triangle. clip-path, not a glyph and not a
    border trick. */
    .enquiry-field:has(select)::after{
-   	content:""; position:absolute; right:14px; bottom:19px;
+   /* pad + half the 21px line box − half the caret = pad + 7. Tracks --field-pad-y
+      so the caret stays on the select's centreline at every viewport height. */
+   	content:""; position:absolute; right:14px; bottom: calc(var(--field-pad-y) + 7px);
    	width:11px; height:7px; background: var(--ink-soft);
    	clip-path: polygon(0 0, 100% 0, 50% 100%);
    	pointer-events:none;
@@ -1705,7 +1751,10 @@ footer a:hover{ color: var(--sky-deep) }
 @media (max-width: 1100px){
 	.hero-foot{ grid-template-columns: 1fr }
 	.hero-coords{ text-align:left }
-	.book .subject-wrap{ grid-template-columns: 1fr; gap: 40px }
+  /* 40px between the notes and the form was fine when Book had a whole extra
+	 screen to spend; stacked on a phone it is 40px of the reason the Send button
+	 was under the fold. Clamped on height so tall phones still breathe. */
+	.book .subject-wrap{ grid-template-columns: 1fr; gap: clamp(18px, 3svh, 40px) }
   /* Below this breakpoint the notes and the widget stack into one column, which no
 	 100vh pin can hold — so Book has to unpin here, not at the 820px breakpoint
 	 where the other panels try to.
@@ -1737,7 +1786,9 @@ footer a:hover{ color: var(--sky-deep) }
 	 that any author declaration beats, so `height:auto` does not hand the
 	 attribute back — it collapses the iframe to the replaced-element default of
 	 150px. This clamp is the same one the pre-React markup used. */
-	 .book-embed{ height: clamp(520px, 82vh, 820px) }
+	 /* svh, not vh: below this breakpoint we are on a phone, where `vh` is the
+		URL-bar-hidden height and overstates the room the widget actually has. */
+	 .book-embed{ height: clamp(520px, 82svh, 820px) }
 	 .book-embed iframe{ height:100% !important; max-height:100% }
   /* Book is auto-height here, so the panel no longer caps the form — an inner
 	 scroller would strand it in a short box inside a long page. */
@@ -1806,7 +1857,27 @@ footer a:hover{ color: var(--sky-deep) }
 }
 @media (max-width: 820px){
 	:root{ --page-x: 18px; --bar-pad: 16px }
-	.enquiry-grid{ grid-template-columns: 1fr }
+  /* NOT a flat single column any more (2026-09-12). Six stacked fields put the
+	 Send button 173px under the fold of a 390×844 phone, and the grid was 472px of
+	 the 606px form. The two SHORT fields — the tour-type select and the date —
+	 share a row; everything with real text in it (organisation, name, email, the
+	 textarea) keeps the full width, because a 169px email field is a worse problem
+	 than the one being solved. Selected by what the field CONTAINS rather than by
+	 position or a new class, so reordering GROUP_ENQUIRY.fields cannot silently
+	 pair the wrong two. */
+	.enquiry-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(8px, 1.3svh, 14px) 14px }
+	.enquiry-field{ grid-column: 1 / -1 }
+	.enquiry-field:has(select),
+	.enquiry-field:has(input[type="date"]){ grid-column: auto }
+	.enquiry-field{ --field-pad-y: 9px }
+	.enquiry-field textarea{ min-height: 56px }
+	.enquiry{ gap: clamp(9px, 1.5svh, 16px) }
+	.enquiry-lede{ font-size: 13.5px; line-height: 1.45 }
+  /* One line, not two: the pair wrapped at 360px and cost 42px of the very
+	 budget this block is trying to recover. */
+	.book-switch button{ font-size: 11px; letter-spacing: .14em; padding: 9px 13px }
+	.book-head h2{ margin-bottom: clamp(12px, 2svh, 22px) }
+	.notes li{ font-size: 13.5px; padding: 3px 0; gap: 11px }
 	.nav-list{ display:none }
 	.menu-btn{ display:inline-flex; justify-self:end }
 	.bar{ grid-template-columns: 1fr auto }
@@ -1819,6 +1890,15 @@ footer a:hover{ color: var(--sky-deep) }
 	.progress{ display:none }
 	.hero{ padding: 160px var(--page-x) 80px }
 	.intro, .manifesto, .subject-track, .formats, .book, .contact{ padding-top: 140px; padding-bottom: 80px }
+  /* BOOK IS EXEMPT FROM THAT PADDING, and it is the single biggest win in the
+	 panel (2026-09-12). 140 + 80 spends 220px of a phone screen on air while the
+	 group enquiry's Send button sits 173px below the fold on a 390×844 handset —
+	 the padding WAS the overflow, near enough. 84px clears the 68px mobile bar
+	 with room to spare; the bottom only has to clear the EN/NL toggle. */
+	.book{
+		padding-top: clamp(84px, 11svh, 104px);
+		padding-bottom: clamp(22px, 3.4svh, 40px);
+	}
   /* Unpin the text-dense panels on mobile so tall stacked content scrolls instead of
 	 clipping under the 100vh/overflow-hidden pin. Hero + route stay pinned so their
 	 scrubbed curtain / map-draw animations keep working. */

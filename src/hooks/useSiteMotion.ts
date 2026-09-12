@@ -210,6 +210,13 @@ export default function useSiteMotion(): void {
 		let snapResize = 0;
 		let snapLastY = window.scrollY;
 		let snapDir = 1;
+		/**
+		 * The rung the reader last came to rest on, and the thing a settle is allowed
+		 * to move exactly one step from — see the long note in settle(). null means
+		 * "no rung established yet" (first load, or a rebuild), and the clamp simply
+		 * does not apply until the first settle records one.
+		 */
+		let snapAnchor: number | null = null;
 
 		// Snapping is on wherever the rails are pinned — desktop AND phones — and off
 		// in the tablet band between them, where the rails unroll into a plain
@@ -352,7 +359,7 @@ export default function useSiteMotion(): void {
 			// short scroll past Contact as an overshoot and drag you back onto it, making
 			// the footer unreachable.
 			if (next === null && snapDir > 0) return;
-			const target =
+			let target =
 				snapDir > 0
 					? prev !== null && y - prev < commit
 						? prev
@@ -362,7 +369,45 @@ export default function useSiteMotion(): void {
 						: prev;
 			// target === null means there is nowhere to go in that direction — above the
 			// first point, i.e. the hero, which has no point of its own by design.
-			if (target === null || Math.abs(target - y) < 2) return;
+			if (target === null) return;
+
+			// ─── ONE RUNG PER GESTURE (2026-09-12) ───
+			// The commit rule above decides WHICH point to settle on, but nothing stopped
+			// a single hard flick from carrying the reader clean over one. Measured at
+			// 1440×900: a 1400px flick from 2475 landed on 4275, jumping the subject
+			// track's own start at 3375 — a whole section never seen. It bites hardest
+			// coming off a horizontal rail, where advancing the rail one panel per flick
+			// trains a big gesture, and the very next flick uses that same force against
+			// a section that is only one rung deep. Book was the one the site owner
+			// noticed, because it sits directly under the gallery rail.
+			//
+			// So a settle may move at most one rung from the rung the reader was resting
+			// on. It does NOT change which direction they go or make the page slower to
+			// travel — a second flick still advances a second rung — it only takes away
+			// the ability to skip one by accident.
+			//
+			// THE DISTANCE GUARD IS WHAT KEEPS THIS HONEST. Clamping unconditionally
+			// would also hijack a deliberate scrollbar drag from the top of the page to
+			// the bottom and yank it back one rung, which would be far worse than the
+			// bug. Two and a half viewports is past any plausible flick (a two-rung
+			// overshoot is ~1.8) and nowhere near a drag across the document, so beyond
+			// it the reader is taken at their word and the plain commit rule applies.
+			if (snapAnchor !== null && Math.abs(y - snapAnchor) <= window.innerHeight * 2.5) {
+				const ai = snapPts.indexOf(snapAnchor);
+				const ti = snapPts.indexOf(target);
+				if (ai !== -1 && ti !== -1 && Math.abs(ti - ai) > 1) {
+					target = snapPts[ai + (ti > ai ? 1 : -1)];
+				}
+			}
+
+			if (Math.abs(target - y) < 2) {
+				// Already there. Still record it: this is the pass that establishes the
+				// anchor after a nav jump or a rebuild, and without it the next flick has
+				// nothing to be measured against and may skip freely.
+				snapAnchor = target;
+				return;
+			}
+			snapAnchor = target;
 			snapping = true;
 			lenis.scrollTo(target, {
 				duration: SNAP_MS / 1000,
@@ -842,6 +887,11 @@ export default function useSiteMotion(): void {
 			const navTop = navId === 'top' ? 0 : snapIds[navId];
 			if (lenis) {
 				snapping = true;
+				// A nav jump is a deliberate move to a named section, so it sets the
+				// one-rung anchor to where it is going. Left pointing at the rung the
+				// reader came FROM, the settle that re-arms on arrival would measure the
+				// whole jump against it and could drag them back a rung.
+				if (navTop !== undefined) snapAnchor = navTop;
 				// Locked for the same reason the settle is: a nav jump crosses several
 				// panels, and a wheel touch halfway through used to abandon it between
 				// two of them.
@@ -878,6 +928,7 @@ export default function useSiteMotion(): void {
 			const target = snapIds[id];
 			if (target === undefined) return; // table not ready yet — try again next call
 			initialNavDone = true;
+			snapAnchor = target; // landing straight on a section establishes the rung
 			if (lenis) lenis.scrollTo(target, { immediate: true });
 			else window.scrollTo(0, target);
 		};
@@ -890,6 +941,7 @@ export default function useSiteMotion(): void {
 			if (target === undefined) return;
 			if (lenis) {
 				snapping = true;
+				snapAnchor = target; // same reason as the nav click above
 				lenis.scrollTo(target, {
 					duration: 1.0,
 					easing: snapEase,
