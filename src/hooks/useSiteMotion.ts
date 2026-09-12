@@ -81,6 +81,23 @@ const SNAP_MS = 540;
 const snapEase = (t: number) => 1 - Math.pow(1 - t, 4);
 
 /**
+ * THE TWO WIDTHS WHERE A HORIZONTAL RAIL IS PINNED AND SCRUBBING, and the one
+ * band between them where it is not. There are three bands as of 2026-09-12:
+ *
+ *   ≥1101px        cover | rail      the original desktop layout
+ *   821px–1100px   cover over rail   a plain vertical stack, no pin, no tween
+ *   ≤820px         cover / rail →    the desktop mechanism, rotated (phones)
+ *
+ * A comma in a media query is OR, so RAIL_PINNED matches the outer two bands and
+ * RAIL_STACKED matches only the middle one — together they are exhaustive and
+ * cannot both match. These two strings and the 820/1101 in the stylesheet's
+ * phone block are ONE set of numbers; change them together or a rail will be
+ * stacked in CSS while the hook is scrubbing it, or vice versa.
+ */
+const RAIL_PINNED = '(min-width: 1101px), (max-width: 820px)';
+const RAIL_STACKED = '(min-width: 821px) and (max-width: 1100px)';
+
+/**
  * The whole motion layer of the site: smooth scroll, panel snapping, the curtain
  * reveal, the text reveals, and the small pieces of UI state.
  *
@@ -194,10 +211,23 @@ export default function useSiteMotion(): void {
 		let snapLastY = window.scrollY;
 		let snapDir = 1;
 
-		// Panels unpin at max-width:1100px (see the mobile rule in the stylesheet), and
-		// snapping auto-height sections is wrong — so this breakpoint and that one are
-		// ONE number. Change both together.
-		const snapOn = () => !!lenis && matchMedia('(min-width: 1101px)').matches;
+		// Snapping is on wherever the rails are pinned — desktop AND phones — and off
+		// in the tablet band between them, where the rails unroll into a plain
+		// vertical stack and snapping auto-height sections is wrong. Same one query
+		// the rail tweens use, so the two can never disagree about a width.
+		const snapOn = () => !!lenis && matchMedia(RAIL_PINNED).matches;
+
+		/**
+		 * How tall ONE pinned screen of a section is — which is not always
+		 * `window.innerHeight`. On a phone the stage is sized in `svh` (the small
+		 * viewport, URL bar showing) so its bottom is never cut off, while
+		 * innerHeight follows the bar up and down; taking innerHeight there would put
+		 * every rung of the ladder a few dozen pixels off and leave the rail resting
+		 * between panels. The stage is the thing that is actually pinned, so measure
+		 * it. On desktop it is exactly 100vh and this returns innerHeight anyway.
+		 */
+		const pinnedHeightOf = (sec: HTMLElement) =>
+			(sec.firstElementChild as HTMLElement | null)?.offsetHeight || window.innerHeight;
 
 		const buildSnapTable = () => {
 			snapPts = [];
@@ -212,7 +242,11 @@ export default function useSiteMotion(): void {
 			let top = main.offsetTop;
 			secs.forEach((sec, i) => {
 				const start = Math.round(top);
-				const over = Math.round(sec.offsetHeight - vh); // > 0 for the hero and the track
+				// A railed section's overshoot is measured against its PINNED STAGE, not
+				// the window — see pinnedHeightOf. Everything else is a plain 100vh panel
+				// and the two numbers are the same.
+				const railed = Number(sec.dataset.snapSteps ?? 0) > 0;
+				const over = Math.round(sec.offsetHeight - (railed ? pinnedHeightOf(sec) : vh));
 				// A section that declares `data-snap-steps` divides its own overshoot into
 				// that many equal stops instead of asking for a free zone. The subject
 				// track is the one that does: its extra height is N viewports of scroll
@@ -524,11 +558,14 @@ export default function useSiteMotion(): void {
 			const railPanels = gsap.utils.toArray<HTMLElement>('.track-rail .track-panel');
 			const steps = railPanels.length - 1;
 
-			// Gated on the same breakpoint as snapOn() and the stylesheet's unpin rule —
-			// below it the rail unrolls into a vertical stack and there is nothing to
-			// scrub. matchMedia reverts a branch's tweens and triggers by itself when its
-			// query stops matching, which is the whole reason for using it here.
-			mm.add('(min-width: 1101px)', () => {
+			// Gated on the same query as snapOn() and the stylesheet's own bands — the
+			// rail is pinned and scrubbing on desktop AND on phones, and only unrolls
+			// into a vertical stack in the tablet band between them, where there is
+			// nothing to scrub. matchMedia reverts a branch's tweens and triggers by
+			// itself when its query stops matching, which is the whole reason for using
+			// it here, and it is what makes a rotate-to-landscape across 820px switch
+			// cleanly between the two branches instead of running both.
+			mm.add(RAIL_PINNED, () => {
 				if (steps < 1) return;
 				const railTween = gsap.to(railPanels, {
 					// Each panel is `flex: 0 0 100%` of the rail — exactly the width of the
@@ -546,7 +583,9 @@ export default function useSiteMotion(): void {
 						// ran, so a refresh mid-track would move the start to the reader's
 						// feet. The hero gets away with 'top top' only because its offset is 0.
 						start: () => staticTopOf(trackSec),
-						end: () => staticTopOf(trackSec) + window.innerHeight * steps,
+						// One PINNED STAGE per step, not one window per step — the two differ
+						// on a phone, where the stage is sized in svh. See pinnedHeightOf.
+						end: () => staticTopOf(trackSec) + pinnedHeightOf(trackSec) * steps,
 						scrub: 0.3,
 						invalidateOnRefresh: true,
 					},
@@ -616,9 +655,10 @@ export default function useSiteMotion(): void {
 				});
 			});
 
-			// Below the breakpoint the rail is a plain vertical stack, so its content
-			// reveals on vertical position like the rest of the page.
-			mm.add('(max-width: 1100px)', () => {
+			// In the tablet band ONLY the rail is a plain vertical stack, so its content
+			// reveals on vertical position like the rest of the page. Phones fall under
+			// RAIL_PINNED above with the desktop branch, not here.
+			mm.add(RAIL_STACKED, () => {
 				trackSec.querySelectorAll<HTMLElement>('.track-rail [data-split]').forEach((el) => {
 					const words = el.querySelectorAll('.w-inner');
 					if (!words.length) return;
@@ -664,7 +704,7 @@ export default function useSiteMotion(): void {
 			const galleryPanels = gsap.utils.toArray<HTMLElement>('.gallery-rail .gallery-panel');
 			const gallerySteps = galleryPanels.length - 1;
 
-			mm.add('(min-width: 1101px)', () => {
+			mm.add(RAIL_PINNED, () => {
 				if (gallerySteps < 1) return;
 				const galleryTween = gsap.to(galleryPanels, {
 					xPercent: -100 * gallerySteps,
@@ -672,7 +712,8 @@ export default function useSiteMotion(): void {
 					scrollTrigger: {
 						trigger: gallerySec,
 						start: () => staticTopOf(gallerySec),
-						end: () => staticTopOf(gallerySec) + window.innerHeight * gallerySteps,
+						// One pinned stage per step — see the same note on the track's tween.
+						end: () => staticTopOf(gallerySec) + pinnedHeightOf(gallerySec) * gallerySteps,
 						scrub: 0.3,
 						invalidateOnRefresh: true,
 					},
@@ -722,8 +763,8 @@ export default function useSiteMotion(): void {
 				});
 			});
 
-			// Below the breakpoint the rail is a plain vertical stack.
-			mm.add('(max-width: 1100px)', () => {
+			// In the tablet band only — phones use the pinned branch above.
+			mm.add(RAIL_STACKED, () => {
 				gallerySec.querySelectorAll<HTMLElement>('.gallery-rail .gsap-fade').forEach((el) => {
 					gsap.fromTo(
 						el,

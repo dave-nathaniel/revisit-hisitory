@@ -1989,3 +1989,241 @@ footer a:hover{ color: var(--sky-deep) }
 	 heading are what keep the rest of the copy inside the pin — see CLAUDE.md. */
 	.word .w-inner, .gsap-fade{ transform:none!important; opacity:1!important }
 	}
+
+/* ═══ PHONES (≤820px): THE TWO RAILS PIN AND RUN SIDEWAYS ═══════════════════
+   Added 2026-09-12 at the site owner's request. Below 820px the subject track
+   and Formats get the desktop mechanism ROTATED: the section pins at the top of
+   the screen, the cover (breadcrumb, heading, lede) holds still across the top
+   of the viewport, and the rail occupies the rest of the screen and scrubs
+   sideways one panel per screen of vertical scroll. When the last panel lands
+   the section unpins and vertical scrolling carries on into the next one.
+
+   WIDTH BANDS — there are three now, and they are deliberate:
+     ≥1101px        cover | rail      the original desktop layout, untouched
+     821px–1100px   cover over rail   the stacked fallback, untouched
+     ≤820px         cover / rail →    this block
+   The 821–1100 band keeps the stack because the rail's copy needs either a
+   real second column or a real phone's full width; at tablet widths it gets
+   neither. Three numbers now travel together: this 820, `RAIL_PINNED` /
+   `RAIL_STACKED` in useSiteMotion.ts, and the 1101 that guards the desktop
+   branch. Change one, change all three.
+
+   WHY THIS SITS AT THE END OF THE FILE. It has to outrank two earlier sets of
+   rules: the `.panels > section.<name>` pinned-panel list (no `!important`,
+   just later), and the `@media (max-width: 1100px)` unroll blocks, which DO
+   carry `!important` — so the declarations that undo those carry it too. An
+   equal-specificity `!important` later in the file wins; that is the whole
+   reason for the position rather than a preference.
+
+   svh, NOT vh. A phone's `100vh` is the LARGE viewport — the height with the
+   URL bar hidden — so a pinned `100vh` stage has its bottom cut off for as long
+   as the bar is showing, which is exactly where the rail's captions and CTAs
+   live. `100svh` is the small viewport and always fits. The cost is that the
+   stage no longer equals `window.innerHeight`, which the snap ladder and the
+   rail tween used to assume; both now MEASURE the stage instead. See the note
+   on `pinnedHeightOf` in useSiteMotion.ts. */
+@media (max-width: 820px){
+  /* ── the sections pin again ── */
+	.panels > section.subject-track,
+	.panels > section.formats{
+		position: sticky !important;
+		top: 0 !important;
+		min-height: 100svh !important;
+		overflow: visible !important;
+	/* Beats the shared mobile `padding-top:140px` a few blocks up: a pinned
+	   section's padding would push the stage down out of its own viewport. The
+	   cover carries that clearance itself now. */
+		padding: 0 !important;
+	}
+	.panels > section.subject-track{ height: calc(100svh * (1 + var(--track-steps, 1))) !important }
+	.panels > section.formats{ height: calc(100svh * (1 + var(--gallery-steps, 1))) !important }
+
+  /* ── the stage: cover on top, rail underneath ──
+	 Same two children as the desktop grid, turned from two columns into two
+	 rows. `minmax(0, 1fr)` on the rail row, never plain `1fr`: a grid track
+	 sized `1fr` has an automatic minimum of its content, so a long rail panel
+	 would grow the row past the viewport and push its own bottom off screen
+	 instead of being clipped. The cover row stays `auto` — it is short, and
+	 whatever it takes the rail gets the remainder. */
+	.track-stage,
+	.gallery-stage{
+		position: sticky !important;
+		top: 0;
+		height: 100svh !important;
+		overflow: hidden;
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-template-rows: auto minmax(0, 1fr);
+		align-items: stretch;
+		gap: clamp(8px, 1.4svh, 16px);
+	/* No side padding on the stage itself — the rail has to be exactly the
+	   width of the window it slides through, or the tween's `-100%` per step
+	   stops landing flush. The cover takes the page gutter on its own. */
+		padding: 0;
+	}
+	.track-cover,
+	.gallery-cover{
+	/* Clears the fixed bar, which the stacked layout never had to think about
+	   because it scrolled away underneath it. */
+	/* 76px floor is the bar's own 72px plus a hair. */
+		padding: clamp(76px, 10.5svh, 100px) var(--page-x) 0 !important;
+	}
+	.track-cover .eyebrow,
+	.gallery-cover .eyebrow{ margin-bottom: clamp(2px, .5svh, 8px) }
+	.track-cover .subject-title{ margin: clamp(4px, .8svh, 10px) 0 clamp(6px, 1.2svh, 12px) }
+  /* EVERY SIZE IN THIS BLOCK IS CLAMPED ON BOTH AXES, `svh` for the height leg.
+	 The cover and the rail share one fixed screen: every point the cover's lede
+	 gains is a point the rail panel below it loses, and the rail panels are
+	 `overflow: hidden`, so the copy does not wrap — it disappears. A 640px-tall
+	 phone was clipping 21px off the second track panel before these were height-
+	 aware. Anything added here gets the same treatment. */
+  /* THE HEIGHT LEG IS THE TIGHT ONE ON PURPOSE. Sized on width alone, a taller
+	 phone grew the cover faster than the rail beneath it — a 390×844 handset ended
+	 up with a BIGGER pinned lede and LESS room for the rail than a 375×667 one,
+	 which is exactly backwards. Leading with `svh` hands the extra height to the
+	 rail, where the copy that has to be read one screen at a time actually lives.
+
+	 MEASURED, not guessed. The cover and the rail split one fixed screen, and the
+	 rail is `overflow: hidden`, so anything the cover takes is copy that vanishes
+	 rather than copy that wraps. Every value above was tuned against the real
+	 numbers until the tallest rail panel fitted exactly:
+
+	   390×844   cover 341  rail 492   longest panel 492  fits
+	   375×667   cover 312  rail 346   longest panel 346  fits
+	   360×640   cover 310  rail 321   longest panel 321  fits
+	   320×568   cover 340  rail 220   longest panel 275  OVER BY 55
+
+	 THE KNOWN LIMIT IS 320×568 (iPhone SE 1st gen / iPhone 5), where the subject
+	 track's second and fourth rail panels lose their last couple of lines. It is
+	 not fixable by shaving type: the cause is that the track's pinned lede is ~85
+	 words, which is 60% of a 568px screen before the rail starts, and the panels
+	 below it are three paragraphs each. Dropping to 11px would buy ~30px of the
+	 55 needed and put body copy under the readable floor. The real fix is a
+	 content one — take the lede out of the pinned cover on phones, or move it onto
+	 the rail as a panel of its own — and that is the site owner's call, not a
+	 styling decision. Formats is unaffected at every size: its lede is one
+	 sentence. Re-measure this table before touching any size in this block. */
+	.track-cover .subject-title{ font-size: clamp(23px, min(7.4vw, 3.9svh), 34px) }
+	.track-cover .subject-lede{
+		font-size: clamp(12px, min(3.6vw, 1.5svh), 14px);
+		line-height: 1.4; max-width: none;
+	}
+	.formats-head{ font-size: clamp(22px, min(7vw, 4.2svh), 34px) }
+	.formats-lede{
+		font-size: clamp(12.5px, min(3.8vw, 1.72svh), 14.5px);
+		line-height: 1.45; margin-top: clamp(8px, 1.4svh, 14px);
+	}
+
+  /* ── the rail: a row again, not a stack ── */
+	.track-viewport,
+	.gallery-viewport{
+		height: 100% !important;
+		min-height: 0;
+		overflow: hidden !important;
+		background: var(--track-bg) !important;
+	}
+	.track-rail,
+	.gallery-rail{
+		display: flex !important;
+		flex-wrap: nowrap;
+		gap: 0 !important;
+		width: 100%; height: 100% !important;
+	}
+	.track-panel,
+	.gallery-panel{
+		flex: 0 0 100%;
+		height: 100% !important;
+		min-width: 0; min-height: 0;
+	/* CENTRED IN THE SLOT, as on desktop. The rail gets whatever the cover does
+	   not take, and most panels do not fill it — left at flex-start they hang off
+	   the top with a third of a screen of dead ground beneath them. Centring
+	   splits that gap and the panel reads as a composed screen instead of copy
+	   that ran out. Image panels override this back to `stretch` below: they DO
+	   fill their slot, and centring a full-height figure does nothing but cost a
+	   layout pass. */
+		display: flex !important; flex-direction: column; justify-content: center;
+		overflow: hidden;
+	}
+  /* The rail's copy needs the page gutter back — at ≤1100px it was zeroed
+	 because the panels were in normal flow inside an already-padded stage. */
+	.track-panel{ --track-inset: var(--page-x) }
+  /* The bottom inset is not symmetry, it is the fixed EN/NL toggle's footprint —
+	 it floats over every panel at `bottom: 16px` and a centred block of copy runs
+	 straight under it. Every rail panel reserves the same corner: here, on the
+	 image panels, and via `--field-bottom` on the format fields. */
+	.track-panel--statement,
+	.track-panel--method,
+	.track-panel--text{
+		padding: clamp(10px, 1.8svh, 24px) var(--page-x) clamp(34px, 5svh, 52px);
+	}
+	.track-ord,
+	.gallery-ord{
+		position: static !important;
+		margin: 0 0 clamp(4px, .9svh, 10px);
+	}
+	.track-head{ font-size: clamp(22px, min(7.2vw, 4.4svh), 34px); max-width: none }
+	.track-turn{ font-size: clamp(13px, min(4vw, 1.9svh), 16px); max-width: none }
+	.track-text{ gap: clamp(6px, 1svh, 12px); max-width: none }
+	.track-text p{ font-size: clamp(12px, min(3.6vw, 1.5svh), 14px); line-height: 1.42 }
+	.track-hint{ margin-top: clamp(14px, 2.4svh, 26px) }
+
+  /* ── image panels fill their slot again ── */
+	.track-panel--image,
+	.gallery-panel--image{
+	/* The deep bottom inset is the fixed EN/NL toggle's footprint: an image panel
+	   fills its slot, so its credit line lands exactly where the toggle sits and
+	   the two print over each other. Same clearance the gallery hint takes. */
+		padding: clamp(18px, 3svh, 30px) var(--page-x) clamp(46px, 7svh, 66px) !important;
+	/* Back to stretch — these DO fill their slot, so the centring above is both
+	   pointless and, on a grid figure, actively wrong. */
+		justify-content: stretch;
+	}
+	.track-figure,
+	.gallery-figure{
+		height: 100% !important;
+		min-height: 0;
+		display: grid; grid-template-rows: minmax(0, 1fr) auto;
+		gap: 10px;
+	}
+	.track-figure img,
+	.gallery-figure img{
+		height: 100% !important;
+		min-height: 0;
+		aspect-ratio: auto !important;
+		object-fit: cover;
+	}
+	.track-figure figcaption{ padding: 0 }
+	.track-caption,
+	.gallery-caption{ font-size: 13.5px; max-width: none }
+
+  /* ── format fields ── */
+	.formats{ --field-top: clamp(18px, 3svh, 30px); --field-bottom: clamp(40px, 6svh, 58px) }
+	.gallery-panel--format .format-field{
+		height: 100% !important;
+		padding: var(--field-top) var(--page-x) var(--field-bottom) !important;
+	/* The field fills the panel, so centring the PANEL's one child moves nothing —
+	   the centring has to happen inside the field itself or the copy hangs off the
+	   top of the slot with a third of a screen empty beneath it. */
+		justify-content: center;
+	}
+	.format-title{ font-size: clamp(21px, min(6.6vw, 4svh), 32px); min-height: 0 }
+	.format-body{
+		font-size: clamp(12.5px, min(3.7vw, 1.72svh), 14.5px); line-height: 1.45;
+	/* The five-line floor exists on desktop to align two CTAs that sit side by
+	   side. On the rail they are one screen apart and never compared, so the
+	   floor only costs vertical room the phone does not have. */
+		min-height: 0;
+		max-width: none;
+	}
+	.format-specs{ margin-top: clamp(8px, 1.5svh, 16px); gap: clamp(4px, .8svh, 9px) }
+	.format-spec dd{ font-size: clamp(12.5px, min(3.7vw, 1.72svh), 14.5px) }
+
+  /* ── the direction cue earns its place here ──
+	 Hidden in the stacked fallback because there was nothing to scroll sideways.
+	 On the rail it is the only thing telling a reader the panel moves. */
+	.track-hint{ display: flex }
+  /* Clear of the fixed EN/NL toggle, which sits at `bottom: 16px` in the same
+	 corner — at ≥1101px the hint is far enough inboard that they never meet, but
+	 a phone rail puts both hard against the same left gutter. */
+	.gallery-hint{ display: flex; left: var(--page-x); bottom: clamp(46px, 7svh, 66px) }
+}
