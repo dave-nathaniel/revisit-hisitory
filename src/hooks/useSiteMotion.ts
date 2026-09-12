@@ -11,6 +11,18 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 declare const Lenis: new (opts: Record<string, unknown>) => LenisLike;
 
 interface LenisLike {
+	/**
+	 * Lenis drops wheel and touch input while this is set, and sets it itself for
+	 * the duration of a `scrollTo({ lock: true })`. It is a real accessor on the
+	 * instance (get/set), not an internal — see `releaseSnap` for why we clear it
+	 * by hand rather than trusting the animation to finish.
+	 */
+	isLocked: boolean;
+	/**
+	 * Clears `isLocked`, drops any in-flight scrollTo tween, and resyncs Lenis's
+	 * animated/target scroll to where the window ACTUALLY is. Public API.
+	 */
+	reset(): void;
 	raf(time: number): void;
 	on(event: 'scroll', handler: (...args: unknown[]) => void): void;
 	off(event: 'scroll', handler: (...args: unknown[]) => void): void;
@@ -36,13 +48,37 @@ window.ScrollTrigger = ScrollTrigger;
 
 /**
  * How much travel off a snap point still counts as a nudge rather than a move to
- * the next panel, as a fraction of the viewport. It is also the size of the
- * hero's free zone — the two are the same idea ("you haven't really left yet"),
- * so they are one number.
+ * the next panel, as a fraction of the viewport.
+ *
+ * RAISED 0.25 → 0.4 (2026-09-12, at the site owner's request: snapping should
+ * "take a deliberate action"). At 0.25 a single trackpad flick — roughly a fifth
+ * of a screen — already committed, so panels changed under the reader's hand. At
+ * 0.4 you have to push most of the way to the next panel before it takes; short
+ * of that you are pulled back onto the one you are on. This is also the rung
+ * spacing on the two horizontal rails (their stops are one viewport apart), so it
+ * governs advancing the rail by one panel as well as changing section.
  */
-const COMMIT_VH = 0.25;
+const COMMIT_VH = 0.4;
 
-const SNAP_MS = 620;
+/**
+ * The hero's free zone, and NO LONGER the same number as COMMIT_VH — the two were
+ * one constant until the commit threshold was raised, and raising this with it
+ * would have widened the window where you can park mid-curtain (the curtain scrub
+ * runs over the first 0.85vh). "You may rest at the very top" and "you have not
+ * travelled far enough to commit" stopped being the same idea at that point.
+ */
+const HERO_FREE_VH = 0.25;
+
+/**
+ * Deliberately shorter and harder-landing than the 620ms it replaces: a firm snap
+ * reads as firm mostly in how it ARRIVES. Paired with `lock: true` on the
+ * scrollTo below, which is the other half — see the note there.
+ */
+const SNAP_MS = 540;
+
+/** Out-quart. Steeper approach and a flatter landing than the cubic Lenis runs
+ *  for ordinary scrolling, so the panel arrives and stops rather than drifting in. */
+const snapEase = (t: number) => 1 - Math.pow(1 - t, 4);
 
 /**
  * The whole motion layer of the site: smooth scroll, panel snapping, the curtain
@@ -144,7 +180,7 @@ export default function useSiteMotion(): void {
 		// free zone used to run the full 0.95vh of the curtain scrub, which meant
 		// stopping anywhere in the first viewport left you parked mid-reveal with the
 		// curtain half open: 9 of the 12 resting positions that landed between panels
-		// were in here. The zone is now one COMMIT_VH — stop within a nudge of the top
+		// were in here. The zone is now one HERO_FREE_VH — stop within a nudge of the top
 		// and you stay at the top; stop past that and you carry on to About. The
 		// curtain still scrubs freely while you are actually moving, because a settle
 		// only fires 140ms after scrolling stops.
@@ -193,7 +229,7 @@ export default function useSiteMotion(): void {
 				const steps = snapOn() ? Number(sec.dataset.snapSteps ?? 0) : 0;
 				if (sec.id) snapIds[sec.id] = start;
 				if (i === 0) {
-					snapFree.push([0, Math.round(vh * COMMIT_VH)]);
+					snapFree.push([0, Math.round(vh * HERO_FREE_VH)]);
 				} else {
 					snapPts.push(start);
 					if (steps > 0 && over > 4) {
@@ -241,6 +277,24 @@ export default function useSiteMotion(): void {
 		// one it is the only thing that finishes the job.
 		const releaseSnap = () => {
 			snapping = false;
+			// UNLOCK BY HAND, ALWAYS. Lenis sets `isLocked` when a `lock: true`
+			// scrollTo STARTS and clears it when that animation reports completion —
+			// so an animation that never completes leaves the page permanently
+			// unscrollable, wheel and touch both. It does not complete if its rAF
+			// stops advancing mid-tween: a backgrounded tab, a long main-thread stall,
+			// a screenshot/print pass. That is not theoretical — it was reproduced
+			// here on the first locked build, and the page froze solid for the rest of
+			// the session. releaseSnap is on both the onComplete and the safety-timer
+			// path, so this covers the completion that never arrives.
+			//
+			// reset(), not `isLocked = false`: unlocking alone leaves the abandoned
+			// tween alive, still creeping toward a target the reader has already left,
+			// and the settle we are about to re-arm would then be fighting it for the
+			// scroll position. reset() drops the tween AND resyncs Lenis to where the
+			// window actually is, which is the only honest starting point for the next
+			// settle. On the normal onComplete path it is a no-op by definition —
+			// animated, target and actual scroll are already the same number.
+			lenis?.reset();
 			clearTimeout(snapTimer);
 			snapTimer = window.setTimeout(settle, 140);
 		};
@@ -278,17 +332,28 @@ export default function useSiteMotion(): void {
 			snapping = true;
 			lenis.scrollTo(target, {
 				duration: SNAP_MS / 1000,
-				easing: (t: number) => 1 - Math.pow(1 - t, 3),
+				easing: snapEase,
 				force: true,
+				// LOCK IS THE OTHER HALF OF "FIRM" (2026-09-12). Without it a flick
+				// landing mid-tween CANCELS the scrollTo, and the reader ends up parked
+				// between two half panels until the re-armed settle drags them somewhere
+				// — the exact state snapping exists to prevent, arrived at by accident
+				// roughly every other time you scrolled quickly. With it the 540ms
+				// landing is committed: input during the tween is dropped rather than
+				// fighting it, and the settle that re-arms afterwards acts on where the
+				// reader actually IS. Short enough that it never reads as an unresponsive
+				// page; long enough that a panel change feels like a decision.
+				lock: true,
 				onComplete: releaseSnap,
 			});
-			// Safety net: force (not lock) means a flick during the tween CANCELS the
-			// scrollTo, so onComplete never fires. Both paths must go through
-			// releaseSnap — clearing the flag alone would leave nobody to re-arm the
-			// settle, and an interrupted snap would strand the reader between two half
-			// panels, which is the exact state snapping exists to prevent.
+			// Safety net regardless: `lock` stops WHEEL input, not every route into the
+			// scroll position (a keyboard Home/End, a programmatic jump, a resize
+			// mid-tween). Both paths must go through releaseSnap — clearing the flag
+			// alone would leave nobody to re-arm the settle.
 			clearTimeout(snapSafety);
-			snapSafety = window.setTimeout(releaseSnap, SNAP_MS + 140);
+			// Generous by 240ms rather than 140: the backstop must not abort a snap that
+			// is merely running a few frames late, only one that has genuinely stalled.
+			snapSafety = window.setTimeout(releaseSnap, SNAP_MS + 240);
 		}
 
 		const onSnapScroll = () => {
@@ -736,10 +801,18 @@ export default function useSiteMotion(): void {
 			const navTop = navId === 'top' ? 0 : snapIds[navId];
 			if (lenis) {
 				snapping = true;
-				lenis.scrollTo(navTop !== undefined ? navTop : (t ?? 0), { offset: 0, duration: 1.0 });
-				window.setTimeout(() => {
-					snapping = false;
-				}, 1140);
+				// Locked for the same reason the settle is: a nav jump crosses several
+				// panels, and a wheel touch halfway through used to abandon it between
+				// two of them.
+				lenis.scrollTo(navTop !== undefined ? navTop : (t ?? 0), {
+					offset: 0,
+					duration: 1.0,
+					easing: snapEase,
+					lock: true,
+					onComplete: releaseSnap,
+				});
+				// Backstop for the lock, same reasoning as the settle's — see releaseSnap.
+				window.setTimeout(releaseSnap, 1140);
 			} else if (t) t.scrollIntoView({ behavior: 'smooth' });
 			if (href.startsWith('/') && navTop !== undefined) history.pushState(null, '', href);
 			document.getElementById('menuOverlay')?.classList.remove('open');
@@ -776,10 +849,13 @@ export default function useSiteMotion(): void {
 			if (target === undefined) return;
 			if (lenis) {
 				snapping = true;
-				lenis.scrollTo(target, { duration: 1.0 });
-				window.setTimeout(() => {
-					snapping = false;
-				}, 1140);
+				lenis.scrollTo(target, {
+					duration: 1.0,
+					easing: snapEase,
+					lock: true,
+					onComplete: releaseSnap,
+				});
+				window.setTimeout(releaseSnap, 1140);
 			} else window.scrollTo(0, target);
 		};
 		addEventListener('popstate', onPopState);

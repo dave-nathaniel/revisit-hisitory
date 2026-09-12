@@ -361,34 +361,16 @@ export const GROUP_ENQUIRY = {
 } as const;
 
 /**
- * THE CONTACT FORM — replaces the old plain mailto heading. Delivered the same
- * way the group enquiry is: POSTed as JSON to our own SMTP endpoint
- * (server/index.js), with a mailto fallback if that ever fails. See
- * ContactPanel.tsx and src/lib/contact.ts.
+ * CONTACT — a heading and the address, nothing else. It was briefly a form
+ * POSTing to server/index.js; reverted at the site owner's request (2026-09-12)
+ * back to the plain mailto heading it had always been. Two earlier, separately
+ * requested changes survive the revert: the lead reads "Contact us" rather than
+ * "Talk with us", and the `meta` block (Acces vzw / Antwerpen, België / Mon–Fri
+ * / By appointment) stays deleted. The /api/contact route is still in
+ * server/index.js and simply has no caller now.
  */
-export interface ContactField {
-	readonly name: string;
-	readonly label: string;
-	readonly type: 'text' | 'email' | 'textarea';
-	readonly required: boolean;
-	readonly autoComplete?: string;
-}
-
 export const CONTACT = {
-	headLead: 'Contact us.',
-	fields: [
-		{ name: 'name', label: 'Your name', type: 'text', required: true, autoComplete: 'name' },
-		{ name: 'email', label: 'Your email', type: 'email', required: true, autoComplete: 'email' },
-		{ name: 'message', label: 'Message', type: 'textarea', required: true },
-	] as readonly ContactField[],
-	submit: 'Send message',
-	sending: 'Sending…',
-	success: 'Thank you — your message is with us. We answer by email within two working days.',
-	handedOff:
-		'Your mail app should have opened with this message ready — press Send there to finish. Nothing has reached us until you do.',
-	failure: 'That did not send. Please write to us directly:',
-	endpoint: '/api/contact',
-	subject: 'Website enquiry',
+	headLead: 'Contact us — write ',
 } as const;
 
 export const FOOTER_LINK = { href: '#top', label: 'Back to top ↑' } as const;
