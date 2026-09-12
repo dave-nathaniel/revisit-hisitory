@@ -293,14 +293,14 @@ export const BOOK = {
 	notes: [
 		{ text: 'Tours are given in Dutch.' },
 		{ text: 'Booking confirmation and practical details will be sent by email.' },
-		{ text: null },
+		{ text: `Got questions? Write to ${CONTACT_EMAIL}.` },
 	] as readonly BookNote[],
 	/* The last note used to send organisations and schools to email. That is now
 	   the Groups & schools tab beside these notes, so pointing at a mailto here
 	   would offer two doors to the same room. Reworded to the general question —
 	   which keeps the site's one inline mailto, and with it the deliberate
 	   .inline-link exception to the no-borders rule. */
-	noteFourLead: 'Questions before you book? Write to ',
+	noteFourLead: '',
 	noteFourTail: '.',
 } as const;
 

@@ -58,7 +58,7 @@ export default function BookPanel({ id = 'book' }: BookPanelProps) {
 		<section className="book" id={id} data-section="book">
 			<div className="subject-wrap">
 				<div className="book-head">
-					<div className="eyebrow crumb gsap-fade">{BOOK.crumb}</div>
+					{/* <div className="eyebrow crumb gsap-fade">{BOOK.crumb}</div> */}
 					<h2 data-split="">
 						{BOOK.headLead}
 						<em>{BOOK.headEm}</em>
@@ -66,7 +66,7 @@ export default function BookPanel({ id = 'book' }: BookPanelProps) {
 					<ul className="notes" aria-label="Important notes">
 						{BOOK.notes.map((note, i) => (
 							<li className="gsap-fade" key={i}>
-								{note.text ?? (
+								{/* {note.text ?? (
 									<>
 										{BOOK.noteFourLead}
 										<a href={`mailto:${CONTACT_EMAIL}`} className="inline-link">
@@ -74,7 +74,8 @@ export default function BookPanel({ id = 'book' }: BookPanelProps) {
 										</a>
 										{BOOK.noteFourTail}
 									</>
-								)}
+								)} */}
+								{note.text}
 							</li>
 						))}
 					</ul>
